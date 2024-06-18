@@ -1,14 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { fireAuth } from '../firebase.ts';
 
 interface ReplyFormProps {
   tweetId: string;
-  userName: string;
   onReplyPosted: () => void;
 }
 
-const ReplyForm: React.FC<ReplyFormProps> = ({ tweetId, userName, onReplyPosted }) => {
+
+const ReplyForm: React.FC<ReplyFormProps> = ({ tweetId, onReplyPosted }) => {
   const [replyContent, setReplyContent] = useState('');
+  const [profileData, setProfileData] = useState<{ name: string; age: number; username: string; avatar_url: string;} | null>(null);
+
+useEffect(() => {
+const fetchUserProfile = async () => {
+  if (fireAuth.currentUser) {
+    const response = await fetch(
+      `https://hackathon-ro2txyk6rq-uc.a.run.app/search?uid=${fireAuth.currentUser?.uid}`
+    );
+    const data = await response.json();
+    if (data && data.length > 0) {
+      setProfileData(data[0]);
+    } else {
+      setProfileData(null);
+    }
+  }
+};
+fetchUserProfile();
+}, []);
 
   const handleReplySubmit = async () => {
     if (replyContent.trim() === "") {
@@ -20,7 +38,7 @@ const ReplyForm: React.FC<ReplyFormProps> = ({ tweetId, userName, onReplyPosted 
       replycontent: replyContent,
       uid: fireAuth.currentUser?.uid,
       tweetid: tweetId,
-      username: userName,
+      username: profileData?.username,
     };
 
     try {
@@ -43,12 +61,13 @@ const ReplyForm: React.FC<ReplyFormProps> = ({ tweetId, userName, onReplyPosted 
 
   return (
     <div>
-      <textarea
+      <input
+        type="text"
         value={replyContent}
         onChange={(e) => setReplyContent(e.target.value)}
-        placeholder="返信内容を入力してください"
+        placeholder="返信を入力"
       />
-      <button onClick={handleReplySubmit}>返信を投稿</button>
+      <button onClick={handleReplySubmit}>返信</button>
     </div>
   );
 };

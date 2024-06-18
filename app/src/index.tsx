@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App.tsx';
+import { MantineProvider } from '@mantine/core';
 import reportWebVitals from './reportWebVitals.ts';
 
 const root = ReactDOM.createRoot(
@@ -9,8 +10,12 @@ const root = ReactDOM.createRoot(
 );
 root.render(
   <React.StrictMode>
-    <App />
+    <MantineProvider withGlobalStyles withNormalizeCSS theme={{ colorScheme: 'light' }}>
+      <App />
+    </MantineProvider>
   </React.StrictMode>
 );
 
 reportWebVitals();
+
+

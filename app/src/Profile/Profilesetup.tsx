@@ -3,7 +3,7 @@ import { signOut,onAuthStateChanged } from 'firebase/auth';
 import { fireAuth} from '../firebase.ts';
 import Profileform from './Profileform.tsx';
 import Contents from './Contents.tsx';
-import { useNavigate } from 'react-router-dom';
+import { Container, Button, Loader, Notification } from '@mantine/core';
 
 interface ProfileSetupProps {
   onProfileComplete: (profileData: any) => void;
@@ -14,6 +14,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onProfileComplete }) => {
   const [loginUser, setLoginUser] = useState(fireAuth.currentUser);
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -25,17 +26,16 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onProfileComplete }) => {
 
   //profile登録
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setProfileImage(e.target.files[0]);
+  const handleImageChange = (file: File | null) => {
+    if (file) {
+      setProfileImage(file);
     }
   };
 
-  const handleSubmit = async (name: string, age: string, username: string) => {
+  const handleSubmit = async (name: string, age: number, username: string) => {
     return new Promise<void>(async (resolve, reject) => {
     var errormessage = ""
     setLoading(true);
-    const age2 = Number(age)
     const firebaseUID = fireAuth.currentUser?.uid
 
     if (!name || !age || !username){
@@ -48,7 +48,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onProfileComplete }) => {
       errormessage = "Please enter a name shorter than 50 characters"
     }
 
-    else if (age2 < 5 || age2 > 80) {
+    else if (age < 5 || age > 80) {
       alert("Please enter age between 20 and 80");
       errormessage = "Please enter age between 20 and 80"
     }
@@ -61,6 +61,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onProfileComplete }) => {
     if (errormessage) {
       console.log(errormessage);
       setLoading(false);
+      setError(errormessage);
       reject(errormessage);
       return;
     }
@@ -69,7 +70,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onProfileComplete }) => {
       const formData = new FormData();
       formData.append('uid', firebaseUID || '');
       formData.append('name', name);
-      formData.append('age', age2.toString());
+      formData.append('age', age.toString());
       formData.append('username', username);
       if (profileImage) {
         formData.append('avatar', profileImage);
@@ -82,6 +83,7 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onProfileComplete }) => {
     if (!response.ok) {
       alert("failed to POST")
       errormessage = "failed to POST"
+      setError(errormessage);
       setLoading(false);
       reject(errormessage)
       return;
@@ -93,10 +95,11 @@ const ProfileSetup: React.FC<ProfileSetupProps> = ({ onProfileComplete }) => {
       onProfileComplete(profileData);
     }
 
-    }catch(error){
+    }catch(err){
       console.error("failed POSTing",error)
       alert("failed POSTing")
       setLoading(false);
+      setError(err.toString());
       reject(error)
     }
   });
@@ -124,22 +127,22 @@ useEffect(() => {
 
 
   return (
-    <div>
+    <Container>
       {loading ? (
-        <div>Loading...</div>
+        <Loader size="lg" />
       ) : (
         <>
+          {error && <Notification color="red">{error}</Notification>}
           <Profileform onSubmit={handleSubmit} onImageChange={handleImageChange} />
-          <button onClick={signOutWithGoogle}>
+          <Button onClick={signOutWithGoogle} color="red" fullWidth mt="md">
             ログアウト
-          </button>
+          </Button>
           <div className='login'>
-            {/* ログインしていないと見られないコンテンツは、loginUserがnullの場合表示しない */}
             {loginUser ? <Contents /> : null}
           </div>
         </>
       )}
-    </div>
+    </Container>
   );
 };
 

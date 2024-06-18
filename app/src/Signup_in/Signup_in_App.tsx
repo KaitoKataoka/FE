@@ -3,6 +3,7 @@ import { fireAuth} from '../firebase.ts';
 import {createUserWithEmailAndPassword} from "firebase/auth";
 import Signinform from './Signinform.tsx';
 import Signupform from './Signupform.tsx';
+import { MantineProvider, Text, PasswordInput, Button, Box, Title, Container } from '@mantine/core';
 
 
 interface Signup_inProps {
@@ -64,37 +65,23 @@ const Signup_in_App: React.FC<Signup_inProps> = ({ onAuthSuccess }) => {
 
 
   return (
-    <div>
-      <div>
-        User Register
-      </div>
-      <div>
-        <label>
-          ~パスワードとメールアドレスで登録~
-        </label>
-        <Signupform onSignup={handlesignup} />
-        <tr>
-          <td>
-          パスワードは以下の条件を満たしてください
-          </td>
-          <td>
-          ・{minLength}文字以上
-          </td>
-          <td>
-          ・一文字以上大文字、小文字、特殊文字が含まれている
-          </td>
-          <td>
-          ・数字が一つ以上含まれている
-          </td>
-        </tr>
-{/*onsubmitにhandlesubmitという関数を代入*/}
-        <label>
-            ~ログイン~
-        </label>
+    <Container size="xs" px="xs" style={{ marginTop: '20px' }}>
+      <Box style={{ textAlign: 'center', marginBottom: 'lg' }}>
+        <Title order={2}>Circle へようこそ</Title>
+      </Box>
+      <Signupform onSignup={handlesignup} />
+      <Box mt="md">
+        <Text>パスワードは以下の条件を満たしてください</Text>
+        <ul>
+          <li>{minLength}文字以上</li>
+          <li>1文字以上「大文字」「小文字」「特殊文字」「数字」が含まれている</li>
+        </ul>
+      </Box>
+      <Box mt="md">
         <Signinform />
-      </div>
-    </div>
+      </Box>
+    </Container>
   );
-    };
+};
 
 export default Signup_in_App;

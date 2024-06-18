@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import ReplyLikeButton from './Reply_like.tsx';
 import { fireAuth } from '../firebase.ts';
 import { fetchLikedReply } from './Reply_like.tsx';
+import ReplyForm from './ReplyForm.tsx';
 
 interface Reply {
   replyid: string;
@@ -15,44 +16,49 @@ interface Reply {
 
 interface ReplyListProps {
   tweetId: string;
-  onReplyPosted: () => void;
 }
 
-const ReplyList: React.FC<ReplyListProps> = ({ tweetId, onReplyPosted }) => {
+const ReplyList: React.FC<ReplyListProps> = ({ tweetId }) => {
   const [replies, setReplies] = useState<Reply[]>([]);
   const [likedTweets, setLikedTweets] = useState<string[]>([]);
+  const [replyLoading, setReplyLoading] = useState<boolean>(true);
+  const [showReplyForm, setShowReplyForm] = useState<boolean>(false);
+
+  const fetchReplies = useCallback(async () => {
+    try {
+      setReplyLoading(true);
+      let likedTweetsData: string[] = [];
+      if (fireAuth.currentUser) {
+        likedTweetsData = await fetchLikedReply(fireAuth.currentUser.uid) || [];
+        setLikedTweets(likedTweetsData);
+      }
+      const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchreply?tweetid=${tweetId}`);
+      const data = await response.json();
+      console.log(tweetId);
+      console.log(data);
+      if (data) {
+        const replys = data.map((reply: any) => ({
+          replyid: reply.replyid,
+          tweetid: reply.tweetid,
+          replycontent: reply.replycontent,
+          username: reply.username,
+          time: reply.time,
+          like: reply.like,
+          isLiked: likedTweetsData.includes(reply.replyid),
+        }));
+        setReplies(replys);
+        console.log("Replies fetched successfully:", replys); // Debug log
+      }
+    } catch (error) {
+      console.error('Error fetching replies:', error);
+    } finally {
+      setReplyLoading(false);
+    }
+  }, [tweetId]);
 
   useEffect(() => {
-    const fetchReplies = async () => {
-      try {
-        if (fireAuth.currentUser) {
-          console.log(tweetId)
-          const likedTweetsData = await fetchLikedReply(fireAuth.currentUser.uid);
-          setLikedTweets(likedTweetsData);
-          const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchreply?tweetid=${tweetId}`);
-          const data = await response.json();
-          if (data) {
-            const replys = data.map((reply: any) => ({
-              replyid: reply.replyid,
-              tweetid: reply.tweetid,
-              replycontent: reply.replycontent,
-              username: reply.username,
-              time: reply.time,
-              like: reply.like,
-              isLiked: likedTweetsData.includes(reply.replyid),
-            }));
-            setReplies(replys);
-            console.log("Replies fetched successfully:", replys); // Debug log
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching replies:', error);
-      }
-    };
-
     fetchReplies();
-    onReplyPosted();
-  }, [tweetId]);
+  }, [fetchReplies, tweetId]);
 
   const handleLikeChange = (replyid: string, isLiked: boolean, likeCount: number) => {
     setLikedTweets(prev => isLiked ? [...prev, replyid] : prev.filter(id => id !== replyid));
@@ -70,21 +76,37 @@ const ReplyList: React.FC<ReplyListProps> = ({ tweetId, onReplyPosted }) => {
     return `${formattedDate} ${formattedTime}`;
   };
 
+  const handleReplyPosted = () => {
+    fetchReplies(); // 返信が投稿された後に返信リストを再取得
+  };
+
   return (
     <div>
-      {replies.map((reply) => (
-        <div key={reply.replyid}>
-          <p>{reply.username}</p>
-          <p>{reply.replycontent}</p>
-          <p>{formatDateTime(reply.time)}</p>
-          <ReplyLikeButton
-            replyid={reply.replyid}
-            initialLike={reply.like}
-            initialIsLiked={reply.isLiked}
-            onLikeChange={handleLikeChange}
-          />
-        </div>
-      ))}
+      {replyLoading ? (
+        <div style={{ textAlign: 'center' }}>Loading...</div>
+      ) : (
+        replies.map((reply) => (
+          <div key={reply.replyid}>
+            <p>{reply.username}</p>
+            <p>{reply.replycontent}</p>
+            <p>{formatDateTime(reply.time)}</p>
+            <ReplyLikeButton
+              replyid={reply.replyid}
+              initialLike={reply.like}
+              initialIsLiked={reply.isLiked}
+              onLikeChange={handleLikeChange}
+            />
+          </div>
+        ))
+      )}
+      <button onClick={() => setShowReplyForm(!showReplyForm)}>返信をポスト</button>
+      {showReplyForm && (
+        <ReplyForm
+          tweetId={tweetId}
+
+          onReplyPosted={handleReplyPosted}
+        />
+      )}
     </div>
   );
 };

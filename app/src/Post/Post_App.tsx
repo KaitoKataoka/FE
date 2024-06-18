@@ -243,15 +243,6 @@ const Post_App: React.FC = () => {
     navigate(`/userProfile/${uid}`);
   };
 
-  const handleReplyPosted = (tweetId: string) => {
-    setShowReplyForm(null);
-    // 任意の処理
-  };
-
-  const handleReplyButtonClick = (tweetId: string) => {
-    setShowReplyForm(tweetId);
-  };
-
   return (
     <div>
       <h1><img src={logo} style={{ width: '200px', height: '150px', cursor: 'pointer', borderRadius: '50%' }} /></h1>
@@ -301,19 +292,17 @@ const Post_App: React.FC = () => {
                   />
                 </td>
                 <td>
-                  <button onClick={() => handleReplyButtonClick(tweet.tweetid)}>返信</button>
                 </td>
                 <td>
                   {showReplyForm === tweet.tweetid && (
                     <ReplyForm
                       tweetId={tweet.tweetid}
-                      userName={profileData?.username || ''}
                       onReplyPosted={() => setShowReplyForm(null)}
                     />
                   )}
                 </td>
                 <td>
-                  <ReplyList tweetId={tweet.tweetid} onReplyPosted={() => handleReplyPosted(tweet.tweetid)}/>
+                  <ReplyList tweetId={tweet.tweetid}/>
                 </td>{/* 返信機能を追加 */}
               </tr>
             ))

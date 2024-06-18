@@ -1,7 +1,8 @@
-import { signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithPopup, GoogleAuthProvider, signInWithEmailAndPassword } from "firebase/auth";
 import { fireAuth } from "../firebase.ts";
 import { getAuth } from "firebase/auth";
 import React, { useState } from 'react';
+import { Container, TextInput, PasswordInput, Button, Paper, Title, Divider, Stack } from '@mantine/core';
 
 export const Signinform: React.FC = () => {
     const [email, setEmail] = useState("");
@@ -41,47 +42,36 @@ export const Signinform: React.FC = () => {
 
   return (
 
-    <div>
-      <label>
-        emailでログイン
-      </label>
-      <form onSubmit={signInWithemail}>
-      <div>
-        <div>
-        <label>email: </label>
-        <input
-          type={"text"}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        ></input>
-        </div>
-      </div>
-
-      <div>
-        <div>
-        <label>password: </label>
-        <input
-          type={"text"}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        ></input>
-        </div>
-      </div>
-      <div>
-        <button type={"submit"}>
-        ログイン
-        </button>
-      </div>
-      <label>
-        googleでログイン
-      </label>
-      </form>
-      <div>
-      <button onClick={signInWithGoogle}>
-        Googleでログイン
-      </button>
-      </div>
-    </div>
+    <Container size="xs" px="xs">
+      <Paper withBorder shadow="md" p={30} mt={30} radius="md">
+        <Title align="center" order={2}>ログイン</Title>
+        <form onSubmit={signInWithemail}>
+          <Stack>
+            <TextInput
+              label="Email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <PasswordInput
+              label="Password"
+              placeholder="Your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <Button type="submit" fullWidth mt="md">
+              ログイン
+            </Button>
+          </Stack>
+        </form>
+        <Divider label="または" labelPosition="center" my="lg" />
+        <Button variant="default" fullWidth mt="md" onClick={signInWithGoogle}>
+          Googleでログイン
+        </Button>
+      </Paper>
+    </Container>
   );
 
 };

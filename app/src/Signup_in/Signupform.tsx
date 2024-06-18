@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { MantineProvider, TextInput, PasswordInput, Button, Box, Title, Container } from '@mantine/core';
 
 type FormProps = {
   onSignup: (email:string, password:string) => Promise<void>;
@@ -23,36 +24,36 @@ const Signupform: React.FC<FormProps> = ({ onSignup }) => {
       }
   };
   return(
-    <form  onSubmit={Signup}>
-
-      <div>
-        <div>
-        <label>email: </label>
-        <input
-          type={"text"}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        ></input>
-        </div>
-      </div>
-
-      <div>
-        <div>
-        <label>password: </label>
-        <input
-          type={"text"}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        ></input>
-        </div>
-      </div>
-      <div>
-        <button type={"submit"}>
-        アカウントを作成
-        </button>
-      </div>
-    </form>
-
+    <Container size="xs" px="xs" style={{ marginTop: '20px' }}>
+      <Box style={{ textAlign: 'center', marginBottom: 'lg' }}>
+        <Title order={3}>Sign Up</Title>
+      </Box>
+      <form onSubmit={Signup}>
+        <Box mb="md">
+          <TextInput
+            label="Email"
+            placeholder="your-email@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+        </Box>
+        <Box mb="md">
+          <PasswordInput
+            label="Password"
+            placeholder="Your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </Box>
+        <Button type="submit" fullWidth>
+          アカウントを作成
+        </Button>
+      </form>
+    </Container>
   );
 };
+
+
 export default Signupform
