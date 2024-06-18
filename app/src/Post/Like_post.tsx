@@ -62,7 +62,6 @@ export const fetchLikedTweets = async (uid: string) => {
   try {
     const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/likedTweets?uid=${uid}`);
     const data = await response.json();
-    console.log("Response data:", data);
     return data
   } catch (error) {
     console.error('Failed to fetch liked tweets:', error);

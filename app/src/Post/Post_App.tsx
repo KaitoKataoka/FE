@@ -7,6 +7,8 @@ import "./Post_App.css";
 import defaultAvatar from '../assets/default_user.png';
 import logo from '../assets/logo.png';
 import LikeButton, { fetchLikedTweets } from './Like_post.tsx';
+import ReplyList from './ReplyList.tsx';
+import ReplyForm from './ReplyForm.tsx';
 
 interface Tweet {
   tweetid: string;
@@ -15,6 +17,7 @@ interface Tweet {
   content: string;
   like: number;
   isLiked: boolean;
+  replyCount: number;
 }
 
 const Post_App: React.FC = () => {
@@ -29,6 +32,8 @@ const Post_App: React.FC = () => {
   const [allTweets, setAllTweets] = useState<Tweet[]>([]);
   const [likedTweets, setLikedTweets] = useState<string[]>([]);
   const [tweetsLoading, setTweetsLoading] = useState<boolean>(true);
+  const [showReplyForm, setShowReplyForm] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState<string>('');
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -67,7 +72,6 @@ const Post_App: React.FC = () => {
         if (fireAuth.currentUser) {
           const likedTweetsData = await fetchLikedTweets(fireAuth.currentUser.uid);
           setLikedTweets(likedTweetsData);
-          console.log(likedTweetsData)
 
           const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchfollow?followuser=${fireAuth.currentUser?.uid}`);
           const data = await response.json();
@@ -83,6 +87,7 @@ const Post_App: React.FC = () => {
                 content: tweet.content,
                 like: tweet.like,
                 isLiked: likedTweetsData.includes(tweet.tweetid),
+                replyCount: tweet.replyCount || 0,
               })));
             }
             const myresponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/mytweet?uid=${fireAuth.currentUser?.uid}`);
@@ -95,6 +100,7 @@ const Post_App: React.FC = () => {
                 content: tweet.content,
                 like: tweet.like,
                 isLiked: likedTweetsData.includes(tweet.tweetid),
+                replyCount: tweet.replyCount || 0,
               }));
               tweets.push(...myTweets);
             }
@@ -193,6 +199,7 @@ const Post_App: React.FC = () => {
             content: content,
             like: 0,
             isLiked: false,
+            replyCount: 0,
           };
           setAllTweets(prevTweets => [newTweet, ...prevTweets]);
           resolve();
@@ -234,6 +241,15 @@ const Post_App: React.FC = () => {
 
   const handleUserClick = (uid: string) => {
     navigate(`/userProfile/${uid}`);
+  };
+
+  const handleReplyPosted = (tweetId: string) => {
+    setShowReplyForm(null);
+    // 任意の処理
+  };
+
+  const handleReplyButtonClick = (tweetId: string) => {
+    setShowReplyForm(tweetId);
   };
 
   return (
@@ -284,6 +300,21 @@ const Post_App: React.FC = () => {
                     onLikeChange={handleLikeChange}
                   />
                 </td>
+                <td>
+                  <button onClick={() => handleReplyButtonClick(tweet.tweetid)}>返信</button>
+                </td>
+                <td>
+                  {showReplyForm === tweet.tweetid && (
+                    <ReplyForm
+                      tweetId={tweet.tweetid}
+                      userName={profileData?.username || ''}
+                      onReplyPosted={() => setShowReplyForm(null)}
+                    />
+                  )}
+                </td>
+                <td>
+                  <ReplyList tweetId={tweet.tweetid} onReplyPosted={() => handleReplyPosted(tweet.tweetid)}/>
+                </td>{/* 返信機能を追加 */}
               </tr>
             ))
           )}
