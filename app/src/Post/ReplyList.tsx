@@ -15,9 +15,10 @@ interface Reply {
 
 interface ReplyListProps {
   tweetId: string;
+  onReplyPosted: () => void;
 }
 
-const ReplyList: React.FC<ReplyListProps> = ({ tweetId }) => {
+const ReplyList: React.FC<ReplyListProps> = ({ tweetId, onReplyPosted }) => {
   const [replies, setReplies] = useState<Reply[]>([]);
   const [likedTweets, setLikedTweets] = useState<string[]>([]);
 
@@ -50,6 +51,7 @@ const ReplyList: React.FC<ReplyListProps> = ({ tweetId }) => {
     };
 
     fetchReplies();
+    onReplyPosted();
   }, [tweetId]);
 
   const handleLikeChange = (replyid: string, isLiked: boolean, likeCount: number) => {
