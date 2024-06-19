@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fireAuth } from '../firebase.ts';
+import { Box, Text, Button, Divider, Grid, Center, Loader, Avatar } from '@mantine/core';
 
 interface LikeButtonProps {
   tweetid: string;
@@ -52,9 +53,12 @@ const LikeButton: React.FC<LikeButtonProps> = ({ tweetid, initialLike, initialIs
   };
 
   return (
-    <button onClick={handleLike} disabled={isLoading}>
+    <Button
+    size='lg'
+    variant="subtle"
+    onClick={handleLike} disabled={isLoading}>
       {isLiked ? '❤️' : '♡'} {likeCount}
-    </button>
+    </Button>
   );
 };
 

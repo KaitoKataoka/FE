@@ -2,6 +2,7 @@ import React,{useState, useEffect} from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import defaultAvatar from '../assets/default_user.png';
 import { fireAuth } from '../firebase.ts';
+import { Box, Text, Button, Divider, Table, Container, Avatar, Paper, Title, Grid } from '@mantine/core';
 
 const OtherProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -157,18 +158,24 @@ const checkIfFollowing = async (uid: string) => {
   }
 
   return (
-    <div className="otherprofile">
-      <button onClick={handleBackClick} style={{ fontSize: '20px' }}>←</button>
-      <img src={avatarURL || defaultAvatar} alt="otherProfile" style={{ width: '100px', height: '100px', borderRadius: '50%' }} />
-      <p>名前: {otherProfile.name}</p>
-      <p>年齢: {otherProfile.age}</p>
-      <p>ユーザー名: {otherProfile.username}</p>
+    <Container>
+      <Button onClick={handleBackClick} style={{ fontSize: '20px' }}>←</Button>
+      <Paper shadow="xs" p="md">
+      <Box display="flex" style={{textAlign: "center"}} mb="md">
+      <Avatar src={avatarURL} alt="Profile" size={100} radius="xl">
+      </Avatar>
+      <Box ml="md">
+      <Title>{otherProfile.username}</Title>
+      <Text>年齢: {otherProfile.age}</Text>
+      </Box>
+      </Box>
       {isFollowing ? (
-        <button onClick={handleUnfollow} disabled={loading} style={{ fontSize: '20px' }}>フォロー解除</button>
+        <Button onClick={handleUnfollow} disabled={loading} color='red'>フォロー解除</Button>
       ) : (
-        <button onClick={handleRegisterFollow} disabled={loading} style={{ fontSize: '20px' }}>フォロー</button>
+        <Button onClick={handleRegisterFollow} disabled={loading} color='indigo'>フォロー</Button>
       )}
-      <table>
+      </Paper>
+      <Table mt="md" highlightOnHover>
         <thead>
           <tr>
             <th>ポスト</th>
@@ -176,17 +183,27 @@ const checkIfFollowing = async (uid: string) => {
         </thead>
         <tbody>
           {OtherTweetData && OtherTweetData.map((tweet: any, index: number) => (
-            <th>
             <tr key={index}>
-              <td>{otherProfile.username}</td>
-              <td>{formatDateTime(tweet.time)}</td>
+              <td>
+              <Text
+              size='s'>
+                {otherProfile.username}
+                </Text>
+              <Text
+              size='s'
+              color='gray'
+              >
+                {formatDateTime(tweet.time)}
+                </Text>
+              <Text
+              size='md'
+              >{tweet.content}</Text>
+              </td>
             </tr>
-            <td>{tweet.content}</td>
-            </th>
           ))}
         </tbody>
-      </table>
-    </div>
+        </Table>
+    </Container>
   );
 }
 export default OtherProfile;

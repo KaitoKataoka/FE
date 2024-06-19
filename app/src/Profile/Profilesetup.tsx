@@ -3,7 +3,7 @@ import { signOut,onAuthStateChanged } from 'firebase/auth';
 import { fireAuth} from '../firebase.ts';
 import Profileform from './Profileform.tsx';
 import Contents from './Contents.tsx';
-import { Container, Button, Loader, Notification } from '@mantine/core';
+import { Container, Button, Loader, Notification, Center } from '@mantine/core';
 
 interface ProfileSetupProps {
   onProfileComplete: (profileData: any) => void;
@@ -129,7 +129,9 @@ useEffect(() => {
   return (
     <Container>
       {loading ? (
-        <Loader size="lg" />
+        <Center style={{ height: '100vh' }}>
+          <Loader size="xl" />
+        </Center>
       ) : (
         <>
           {error && <Notification color="red">{error}</Notification>}

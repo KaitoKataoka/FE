@@ -3,6 +3,8 @@ import ReplyLikeButton from './Reply_like.tsx';
 import { fireAuth } from '../firebase.ts';
 import { fetchLikedReply } from './Reply_like.tsx';
 import ReplyForm from './ReplyForm.tsx';
+import { Box, Text, Button, Divider, Grid, Center, Loader, Avatar } from '@mantine/core';
+import defaultAvatar from '../assets/default_user.png';
 
 interface Reply {
   replyid: string;
@@ -23,6 +25,10 @@ const ReplyList: React.FC<ReplyListProps> = ({ tweetId }) => {
   const [likedTweets, setLikedTweets] = useState<string[]>([]);
   const [replyLoading, setReplyLoading] = useState<boolean>(true);
   const [showReplyForm, setShowReplyForm] = useState<boolean>(false);
+  const [avatarURL, setAvatarURL] = useState<string | null>(null);
+  const [showAllReplies, setShowAllReplies] = useState<boolean>(false);
+
+
 
   const fetchReplies = useCallback(async () => {
     try {
@@ -81,33 +87,53 @@ const ReplyList: React.FC<ReplyListProps> = ({ tweetId }) => {
   };
 
   return (
-    <div>
+    <Box>
       {replyLoading ? (
-        <div style={{ textAlign: 'center' }}>Loading...</div>
+        <Center style={{ height: '100vh' }}>
+          <Loader size="xl" />
+        </Center>
       ) : (
-        replies.map((reply) => (
-          <div key={reply.replyid}>
-            <p>{reply.username}</p>
-            <p>{reply.replycontent}</p>
-            <p>{formatDateTime(reply.time)}</p>
-            <ReplyLikeButton
-              replyid={reply.replyid}
-              initialLike={reply.like}
-              initialIsLiked={reply.isLiked}
-              onLikeChange={handleLikeChange}
-            />
-          </div>
-        ))
+        <>
+          {replies.slice(0, showAllReplies ? replies.length : 2).map((reply) => (
+            <Box key={reply.replyid} mb="lg">
+              <Grid>
+                <Grid.Col span={2}>
+                  <Avatar src={avatarURL} alt="Profile" size={40} radius="xl" />
+                </Grid.Col>
+                <Grid.Col span={8}>
+                  <Text size="lg" weight={700}>{reply.username}</Text>
+                  <Text size="s" color='gray'>{formatDateTime(reply.time)}</Text>
+                  <Text weight={600}>{reply.replycontent}</Text>
+                  <ReplyLikeButton
+                    replyid={reply.replyid}
+                    initialLike={reply.like}
+                    initialIsLiked={reply.isLiked}
+                    onLikeChange={handleLikeChange}
+                  />
+                </Grid.Col>
+              </Grid>
+            </Box>
+          ))}
+          {replies.length > 2 && (
+            <Button
+            variant="subtle"
+            onClick={() => setShowAllReplies(!showAllReplies)} >
+              {showAllReplies ? '返信を非表示にする' : '返信を表示する'}
+            </Button>
+          )}
+        </>
       )}
-      <button onClick={() => setShowReplyForm(!showReplyForm)}>返信をポスト</button>
+      <Button
+      variant="subtle"
+      color='indigo'
+      onClick={() => setShowReplyForm(!showReplyForm)}>返信をポスト</Button>
       {showReplyForm && (
         <ReplyForm
           tweetId={tweetId}
-
           onReplyPosted={handleReplyPosted}
         />
       )}
-    </div>
+    </Box>
   );
 };
 

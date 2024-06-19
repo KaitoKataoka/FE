@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fireAuth } from '../firebase.ts';
+import { Box, Text, Button, Divider, Grid, Center, Loader, Avatar } from '@mantine/core';
 
 interface ReplyLikeButtonProps {
   replyid: string;
@@ -54,9 +55,11 @@ const ReplyLikeButton: React.FC<ReplyLikeButtonProps> = ({ replyid, initialLike,
   };
 
   return (
-    <button onClick={handleLike} disabled={isLoading}>
+    <Button
+    variant="subtle"
+    onClick={handleLike} disabled={isLoading}>
       {isLiked ? '❤️' : '♡'} {likeCount}
-    </button>
+    </Button>
   );
 };
 

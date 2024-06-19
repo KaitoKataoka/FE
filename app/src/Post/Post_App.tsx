@@ -9,6 +9,9 @@ import logo from '../assets/logo.png';
 import LikeButton, { fetchLikedTweets } from './Like_post.tsx';
 import ReplyList from './ReplyList.tsx';
 import ReplyForm from './ReplyForm.tsx';
+import { MantineProvider, AppShell, Navbar, Header, Text, Input, Avatar, Container, Grid, Button, Center, Box, Textarea, useMantineTheme, Divider, Loader} from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
+import MyProfile_setting from './MyProfile_setting.tsx';
 
 interface Tweet {
   tweetid: string;
@@ -23,6 +26,7 @@ interface Tweet {
 const Post_App: React.FC = () => {
   const [profileData, setProfileData] = useState<{ name: string; age: number; username: string; avatar_url: string;} | null>(null);
   const navigate = useNavigate();
+  const theme = useMantineTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [noResults, setNoResults] = useState(false);
@@ -34,6 +38,9 @@ const Post_App: React.FC = () => {
   const [tweetsLoading, setTweetsLoading] = useState<boolean>(true);
   const [showReplyForm, setShowReplyForm] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState<string>('');
+  const isMobile = useMediaQuery(`(max-width: ${767}px)`);
+  const isMobilePost = useMediaQuery(`(max-width: ${970}px)`);
+  const [follownumber, setFollowNumber] = useState<number | null>(0)
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -75,6 +82,7 @@ const Post_App: React.FC = () => {
 
           const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchfollow?followuser=${fireAuth.currentUser?.uid}`);
           const data = await response.json();
+          setFollowNumber(data.length)
           if (data) {
             const tweets: Tweet[] = [];
             for (let i = 0; i < data.length; i++) {
@@ -213,11 +221,15 @@ const Post_App: React.FC = () => {
   };
 
   if (!profileData) {
-    return <div>Loading...</div>;
+    return <Center style={{ height: '100vh' }}>
+              <Loader size="xl" />
+            </Center>
   }
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Center style={{ height: '100vh' }}>
+              <Loader size="xl" />
+          </Center>
   }
 
   const handleProfileClick = () => {
@@ -244,76 +256,153 @@ const Post_App: React.FC = () => {
   };
 
   return (
-    <div>
-      <h1><img src={logo} style={{ width: '200px', height: '150px', cursor: 'pointer', borderRadius: '50%' }} /></h1>
-      {userLoading ? (
-        <div>loading...</div>
-      ) : (
-        <></>
-      )}
-      <input
-        type="text"
-        placeholder="ユーザーネームを検索"
-        value={searchTerm}
-        onChange={handleSearch}
-        style={{ width: '50%', margin: '0 auto', display: 'block' }}
-      />
-      <div>
-        {searchResults.map(user => (
-          <div key={user.uid} onClick={() => handleUserClick(user.uid)} style={{ cursor: 'pointer' }}>
-            <p><img src={defaultAvatar} alt="Profile" onClick={handleProfileClick} style={{ width: '100px', height: '100px', cursor: 'pointer', borderRadius: '50%' }} />{user.username}</p>
-          </div>
-        ))}
-        {noResults && <p>該当無し</p>}
-      </div>
-      <table>
-        <thead>
-          <tr>
-            <th>ポスト</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tweetsLoading ? ( // ツイートが読み込み中かどうかをチェック
-            <tr>
-              <td colSpan={4} style={{ textAlign: 'center' }}>Loading...</td>
-            </tr>
-          ) : (
-            allTweets && allTweets.map((tweet: Tweet, index: number) => (
-              <tr key={index}>
-                <td>{tweet.username}</td>
-                <td>{formatDateTime(tweet.time)}</td>
-                <td>{tweet.content}</td>
-                <td>
-                  <LikeButton
-                    tweetid={tweet.tweetid}
-                    initialLike={tweet.like}
-                    initialIsLiked={tweet.isLiked}
-                    onLikeChange={handleLikeChange}
-                  />
-                </td>
-                <td>
-                </td>
-                <td>
-                  {showReplyForm === tweet.tweetid && (
-                    <ReplyForm
-                      tweetId={tweet.tweetid}
-                      onReplyPosted={() => setShowReplyForm(null)}
-                    />
-                  )}
-                </td>
-                <td>
-                  <ReplyList tweetId={tweet.tweetid}/>
-                </td>{/* 返信機能を追加 */}
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-      <div className="sidebar">
-        <img src={avatarURL || defaultAvatar} alt="Profile" onClick={handleProfileClick} style={{ width: '100px', height: '100px', cursor: 'pointer', borderRadius: '50%' }} />
-      </div>
-      <Contentform onNewPost={createPost} />
-    </div>
+    <MantineProvider theme={{ colorScheme: theme.colorScheme }}>
+      <AppShell
+        padding="md"
+        header={
+          <Header height={60} p="xs">
+            <Grid justify="space-between" align="center">
+              <Grid.Col span={2}>
+                <img src={logo} style={{ width: '50px', height: '50px', cursor: 'pointer' }} alt="logo" />
+              </Grid.Col>
+            </Grid>
+          </Header>
+        }
+        navbar={
+          <Navbar width={{ base: isMobile ? 100 : 350 }} height={1000} p="xs" sx={{ overflowY: 'auto' }}>
+          <Grid>
+            <Grid.Col span={isMobile ? 12 : 5}>
+              <Avatar
+                src={avatarURL || defaultAvatar}
+                alt="Profile"
+                onClick={handleProfileClick}
+                size={isMobile ? 50: 90}
+                style={{ cursor: 'pointer' }}
+              />
+              <Text size='xl' weight={600} sx={{textAlign: "center"}}>{profileData?.username}</Text>
+              <Text size={isMobile ? 'xs':'s'} weight={600} sx={{textAlign: "center"}}>フォロー数：{follownumber}</Text>
+            </Grid.Col>
+            <Grid.Col span={isMobile ? 9 : 7}>
+            <Box mt="xs">
+              <Grid.Col span={9}>
+                <Input
+                  type="text"
+                  placeholder="ユーザーを検索"
+                  value={searchTerm}
+                  onChange={handleSearch}
+                  style={{width: isMobile ? '300%' :  '100%' }}
+                />
+              </Grid.Col>
+                {searchResults.map(user => (
+                  <Box key={user.uid} onClick={() => handleUserClick(user.uid)} style={{ cursor: 'pointer' }}>
+                    <Grid>
+                    <Grid.Col span={4}>
+                    <Avatar src={avatarURL} alt="Profile" size={50} radius="xl">
+                    </Avatar>
+                    </Grid.Col>
+                    <Grid.Col span={4}>
+                    <Text
+                    weight={700}
+                    sx={{
+                    marginTop: 15}}
+                    >
+                      {user.username}
+                      </Text>
+                    </Grid.Col>
+                    </Grid>
+                  </Box>
+                ))}
+                {noResults && <Text weight={700}>該当無し</Text>}
+              </Box>
+            </Grid.Col>
+          </Grid>
+        </Navbar>
+        }
+      >
+        <Container>
+          <Grid>
+            <Grid.Col span={12}>
+              {tweetsLoading ? (
+                <Center style={{ height: '100vh' }}>
+                  <Loader size="xl" />
+                </Center>
+              ) : (
+                allTweets.map((tweet: Tweet, index: number) => (
+                  <Box key={index} mb="lg">
+                    <Grid>
+                      <Avatar src={defaultAvatar} alt="Profile" size={isMobile ? 50: 70} radius="xl" />
+                      <Grid.Col span={2}>
+                        <Text size='xl' weight={700}>{tweet.username}</Text>
+                      </Grid.Col>
+                      <Grid.Col span={9}>
+                        <Text size="md" color="gray">{formatDateTime(tweet.time)}</Text>
+                      </Grid.Col>
+                      </Grid>
+
+                      <Grid>
+                      <Grid.Col span={8}>
+                        <Text size="xl" weight={600}
+                        sx={{textAlign: "center"}}>
+                          {tweet.content}
+                          </Text>
+                      </Grid.Col>
+                    </Grid>
+
+                    <Grid>
+                    <Grid.Col
+                    sx={{textAlign: 'center'}}
+                    span={6}>
+                        <LikeButton
+                          tweetid={tweet.tweetid}
+                          initialLike={tweet.like}
+                          initialIsLiked={tweet.isLiked}
+                          onLikeChange={handleLikeChange}
+                        />
+                      </Grid.Col>
+                      <Grid.Col span={6}>
+                    <ReplyList tweetId={tweet.tweetid} />
+                    {showReplyForm === tweet.tweetid && (
+                      <ReplyForm
+                        tweetId={tweet.tweetid}
+                        onReplyPosted={() => setShowReplyForm(null)}
+                      />
+                    )}
+                    </Grid.Col>
+                    </Grid>
+                    <Divider my="sm" />
+                  </Box>
+                ))
+              )}
+            </Grid.Col>
+          </Grid>
+        </Container>
+        <Box
+        sx={{
+          position: 'fixed',
+          bottom: 0,
+          width: '60%',
+          padding: '10px',
+        }}>
+          <Grid>
+            <Grid.Col span={8}>
+              <Textarea
+                placeholder="What's happening?"
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.currentTarget.value)}
+              />
+            </Grid.Col>
+            <Grid.Col span={isMobile ? 3:2}>
+              <Button
+              color='lime'
+              sx={{padding: 0,height: isMobilePost ? 40:50,fontSize: 20}}
+              fullWidth onClick={() => createPost(replyContent)}>
+                Post
+              </Button>
+            </Grid.Col>
+          </Grid>
+        </Box>
+      </AppShell>
+    </MantineProvider>
   );
 };
 

@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { Textarea, Button, Box } from '@mantine/core';
+
+
 
 interface NewPostProps {
   onNewPost: (content: string) => void;
@@ -19,14 +22,18 @@ const Contentform = (props: NewPostProps) =>{
 
   return (
     <form onSubmit={handleSubmit}>
-      <input
-      type ={"text"}
-      value={content}
-      onChange={e => setContent(e.target.value)}
-      placeholder="What's happening?" />
-      <button type="submit">
+      <Box mb="md">
+        <Textarea
+          value={content}
+          onChange={e => setContent(e.target.value)}
+          placeholder="What's happening?"
+          autosize
+          minRows={2}
+        />
+      </Box>
+      <Button type="submit">
         Post
-      </button>
+      </Button>
     </form>
   );
 };

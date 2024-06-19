@@ -3,17 +3,20 @@ import React,{useState, useEffect} from 'react';
 import { fireAuth } from '../firebase.ts';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import defaultAvatar from '../assets/default_user.png';
+import { Avatar, Box, Button, Paper, Table, Text, Title, Container, Center, Loader } from '@mantine/core';
+import defaultAvatar from "../assets/default_user.png";
 
 interface MyProfileProps {
   profileData: { name: string; age: number; username: string; avatar: string };
 }
+
 
 const MyProfile_setting: React.FC<MyProfileProps> = ({ profileData }) => {
   const navigate = useNavigate();
   const [MyTweetData, setMyTweetData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [avatarURL, setAvatarURL] = useState<string | null>(null);
+  const [follownumber, setFollowNumber] = useState<number | null>(0)
 
   useEffect(() => {
     handleMyTweet();
@@ -38,6 +41,17 @@ const MyProfile_setting: React.FC<MyProfileProps> = ({ profileData }) => {
       }
     };
 
+    const fetchFollows = async () => {
+      if (fireAuth.currentUser) {
+        const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchfollow?followuser=${fireAuth.currentUser?.uid}`);
+        const data = await response.json();
+        if (data) {
+        setFollowNumber(data.length)
+        };
+      }
+    }
+
+    fetchFollows()
     fetchAvatarURL();
   }, [profileData]);
 
@@ -72,7 +86,9 @@ const MyProfile_setting: React.FC<MyProfileProps> = ({ profileData }) => {
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Center style={{ height: '100vh' }}>
+            <Loader size="xl" />
+          </Center>
   }
 
   const formatDateTime = (dateTime: string) => {
@@ -87,32 +103,42 @@ const MyProfile_setting: React.FC<MyProfileProps> = ({ profileData }) => {
   };
 
   return (
-      <div className="profile">
-        <button onClick={handleBackClick} style={{ fontSize: '20px' }}>←</button>
-        <img src={avatarURL || '/uploads/default-avatar.png'} alt="Profile" style={{ width: '100px', height: '100px', borderRadius: '50%' }} />
-        <p>名前: {profileData.name}</p>
-        <p>年齢: {profileData.age}</p>
-        <p>ユーザー名: {profileData.username}</p>
-        <button onClick={signOutWithGoogle}>ログアウト</button>
-        <table>
-          <thead>
-            <tr>
-              <th>ポスト</th>
+    <Container>
+      <Button onClick={handleBackClick} variant="outline" mb="md">←</Button>
+      <Paper shadow="xs" p="md">
+        <Box display="flex" style={{textAlign: "center"}} mb="md">
+          <Avatar src={avatarURL} alt="Profile" size={100} radius="xl">
+            {!avatarURL && profileData.username.charAt(0).toUpperCase()}
+          </Avatar>
+          <Box ml="md">
+            <Title order={2}>{profileData.username}</Title>
+            <Text>{profileData.age}歳</Text>
+            <Text>フォロー数：{follownumber}</Text>
+          </Box>
+        </Box>
+        <Button onClick={signOutWithGoogle} variant="outline" color="red">ログアウト</Button>
+      </Paper>
+      <Table mt="md" highlightOnHover>
+        <thead>
+          <tr>
+            <th>ポスト</th>
+          </tr>
+        </thead>
+        <tbody>
+          {MyTweetData && MyTweetData.map((tweet: any, index: number) => (
+            <tr key={index}>
+              <td>
+                <Text
+                color='gray'
+                >
+                  {formatDateTime(tweet.time)}</Text>
+                <Text>{tweet.content}</Text>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {MyTweetData && MyTweetData.map((tweet: any, index: number) => (
-              <th>
-              <tr key={index}>
-                <td>{profileData.username}</td>
-                <td>{formatDateTime(tweet.time)}</td>
-              </tr>
-              <td>{tweet.content}</td>
-              </th>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </Table>
+    </Container>
     );
   };
 

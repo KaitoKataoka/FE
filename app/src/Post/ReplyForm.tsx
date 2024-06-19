@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fireAuth } from '../firebase.ts';
+import { Box, Button, Textarea } from '@mantine/core';
 
 interface ReplyFormProps {
   tweetId: string;
@@ -60,15 +61,18 @@ fetchUserProfile();
   };
 
   return (
-    <div>
-      <input
-        type="text"
+    <Box mt="sm">
+      <Textarea
         value={replyContent}
         onChange={(e) => setReplyContent(e.target.value)}
         placeholder="返信を入力"
+        autosize
+        minRows={2}
       />
-      <button onClick={handleReplySubmit}>返信</button>
-    </div>
+      <Button
+      color='indigo'
+      onClick={handleReplySubmit} mt="sm">返信</Button>
+    </Box>
   );
 };
 

@@ -1,9 +1,9 @@
-import React from 'react';
+import React,{useState} from 'react';
 import { fireAuth} from '../firebase.ts';
 import {createUserWithEmailAndPassword} from "firebase/auth";
 import Signinform from './Signinform.tsx';
 import Signupform from './Signupform.tsx';
-import { MantineProvider, Text, PasswordInput, Button, Box, Title, Container } from '@mantine/core';
+import { MantineProvider, Text, PasswordInput, Button, Box, Title, Container, Center, Loader } from '@mantine/core';
 
 
 interface Signup_inProps {
@@ -11,6 +11,7 @@ interface Signup_inProps {
 }
 
 const Signup_in_App: React.FC<Signup_inProps> = ({ onAuthSuccess }) => {
+  const [loading, setLoading] = useState<boolean>(false);
 
   //emailでサインアップ
   const minLength = 8;
@@ -22,6 +23,7 @@ const Signup_in_App: React.FC<Signup_inProps> = ({ onAuthSuccess }) => {
 
   const handlesignup = async (email: string, password: string)=> {
     return new Promise<void>(async (resolve, reject) => {
+      setLoading(true)
     var errormessage = ""
 
     if (password.length < minLength){
@@ -49,15 +51,18 @@ const Signup_in_App: React.FC<Signup_inProps> = ({ onAuthSuccess }) => {
     if (errormessage) {
       console.log(errormessage);
       reject(errormessage);
+      setLoading(false);
       return;
     }
     try {
       await createUserWithEmailAndPassword(fireAuth, email, password);
       console.log('User registered:');
       resolve();
+      setLoading(false);
       onAuthSuccess();
     }catch (error) {
       reject(error);
+      setLoading(false);
     }// 非同期処理が失敗した場合は reject する
   });
   };
@@ -65,6 +70,12 @@ const Signup_in_App: React.FC<Signup_inProps> = ({ onAuthSuccess }) => {
 
 
   return (
+    <Container>
+      {loading ? (
+                <Center style={{ height: '100vh' }}>
+                  <Loader size="xl" />
+                </Center>
+              ) : (
     <Container size="xs" px="xs" style={{ marginTop: '20px' }}>
       <Box style={{ textAlign: 'center', marginBottom: 'lg' }}>
         <Title order={2}>Circle へようこそ</Title>
@@ -80,6 +91,8 @@ const Signup_in_App: React.FC<Signup_inProps> = ({ onAuthSuccess }) => {
       <Box mt="md">
         <Signinform />
       </Box>
+    </Container>
+              )}
     </Container>
   );
 };
