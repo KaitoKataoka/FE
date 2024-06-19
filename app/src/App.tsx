@@ -20,7 +20,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [profileData, setProfileData] = useState<any>(null);
   const [profileComplete, setProfileComplete] = useState<any>(null);
-  const [loading, setloading] = useState<boolean>(true);
+  const [loading, setloading] = useState<boolean>(false);
 
   useEffect(() => {
     const unsubscribe = fireAuth.onAuthStateChanged(async user => {
@@ -34,6 +34,7 @@ const App: React.FC = () => {
   []);
 
   const handleAuthSuccess = async() => {
+    setloading(true);
     if (fireAuth.currentUser) {
       const response = await fetch(
         `https://hackathon-ro2txyk6rq-uc.a.run.app/search?uid=${fireAuth.currentUser.uid}`);
