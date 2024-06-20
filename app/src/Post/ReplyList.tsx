@@ -14,6 +14,7 @@ interface Reply {
   time: string;
   like: number;
   isLiked: boolean;
+  avatar_url: string
 }
 
 interface ReplyListProps {
@@ -42,6 +43,10 @@ const ReplyList: React.FC<ReplyListProps> = ({ tweetId }) => {
       const data = await response.json();
       console.log(tweetId);
       console.log(data);
+      console.log(data[0].uid)
+      const avatarresponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchAvatar?uid=${data[0].uid}`);
+      const avatardata = await avatarresponse.json();
+
       if (data) {
         const replys = data.map((reply: any) => ({
           replyid: reply.replyid,
@@ -51,6 +56,7 @@ const ReplyList: React.FC<ReplyListProps> = ({ tweetId }) => {
           time: reply.time,
           like: reply.like,
           isLiked: likedTweetsData.includes(reply.replyid),
+          avatar_url: avatardata.avatar_url
         }));
         setReplies(replys);
         console.log("Replies fetched successfully:", replys); // Debug log
@@ -98,7 +104,7 @@ const ReplyList: React.FC<ReplyListProps> = ({ tweetId }) => {
             <Box key={reply.replyid} mb="lg">
               <Grid>
                 <Grid.Col span={2}>
-                  <Avatar src={avatarURL} alt="Profile" size={40} radius="xl" />
+                  <Avatar src={reply.avatar_url} alt="Profile" size={40} radius="xl" />
                 </Grid.Col>
                 <Grid.Col span={8}>
                   <Text size="lg" weight={700}>{reply.username}</Text>

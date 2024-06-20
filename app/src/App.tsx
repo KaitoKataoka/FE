@@ -20,18 +20,21 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [profileData, setProfileData] = useState<any>(null);
   const [profileComplete, setProfileComplete] = useState<any>(null);
-  const [loading, setloading] = useState<boolean>(false);
+  const [loading, setloading] = useState<boolean>(true);
 
   useEffect(() => {
     const unsubscribe = fireAuth.onAuthStateChanged(async user => {
       setUser(user);
       if (user) {
         handleAuthSuccess();
+      }else{
+        setloading(false)
       }
     });
     return () => unsubscribe();
   },
   []);
+
 
   const handleAuthSuccess = async() => {
     setloading(true);

@@ -2,7 +2,7 @@ import React,{useState, useEffect} from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import defaultAvatar from '../assets/default_user.png';
 import { fireAuth } from '../firebase.ts';
-import { Box, Text, Button, Divider, Table, Container, Avatar, Paper, Title, Grid } from '@mantine/core';
+import { Box, Text, Button, Loader, Table, Container, Avatar, Paper, Title, Center } from '@mantine/core';
 
 const OtherProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -62,7 +62,7 @@ const OtherProfile: React.FC = () => {
       const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchAvatar?uid=${uid}`);
       const data = await response.json();
       console.log(data.avatar_url)
-      setAvatarURL(defaultAvatar);
+      setAvatarURL(data.avatar_url);
       setLoading(false);
     } catch (error) {
       console.error('Failed to fetch avatar URL:', error);
@@ -73,6 +73,10 @@ const OtherProfile: React.FC = () => {
 
   const handleRegisterFollow = async() => {
     try{
+      if (uid == fireAuth.currentUser?.uid){
+        alert("自分のアカウントです")
+      }
+      else if (uid != fireAuth.currentUser?.uid) {
     const response = await fetch(
       "https://hackathon-ro2txyk6rq-uc.a.run.app/follow",
       {
@@ -94,7 +98,7 @@ const OtherProfile: React.FC = () => {
     } else {
       console.log(uid);
       setIsFollowing(true);
-    }
+    }}
   } catch (error) {
     console.error("failed follow", error);
     alert("failed follow");
@@ -150,11 +154,15 @@ const checkIfFollowing = async (uid: string) => {
   };
 
   if (!otherProfile) {
-    return <div>Loading...</div>;
+    return <Center style={{ height: '100vh' }}>
+              <Loader size="xl" />
+            </Center>
   }
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Center style={{ height: '100vh' }}>
+              <Loader size="xl" />
+            </Center>
   }
 
   return (

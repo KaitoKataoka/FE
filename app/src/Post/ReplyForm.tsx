@@ -71,7 +71,7 @@ fetchUserProfile();
       />
       <Button
       color='indigo'
-      onClick={handleReplySubmit} mt="sm">返信</Button>
+      onClick={handleReplySubmit} mt="sm" disabled={!replyContent}>返信</Button>
     </Box>
   );
 };

@@ -1,6 +1,5 @@
 import { fireAuth } from '../firebase.ts';
 import React, { useState, useEffect, useCallback } from 'react';
-import Contentform from './Newpost.tsx';
 import { useNavigate } from 'react-router-dom';
 import debounce from 'lodash.debounce';
 import "./Post_App.css";
@@ -9,9 +8,8 @@ import logo from '../assets/logo.png';
 import LikeButton, { fetchLikedTweets } from './Like_post.tsx';
 import ReplyList from './ReplyList.tsx';
 import ReplyForm from './ReplyForm.tsx';
-import { MantineProvider, AppShell, Navbar, Header, Text, Input, Avatar, Container, Grid, Button, Center, Box, Textarea, useMantineTheme, Divider, Loader} from '@mantine/core';
+import { MantineProvider, AppShell, Navbar, Header, Text, Input, Avatar, Container, Grid, Button, Center, Box, Textarea, useMantineTheme, Divider, Loader, Flex} from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import MyProfile_setting from './MyProfile_setting.tsx';
 
 interface Tweet {
   tweetid: string;
@@ -21,6 +19,7 @@ interface Tweet {
   like: number;
   isLiked: boolean;
   replyCount: number;
+  avatar_url: string;
 }
 
 const Post_App: React.FC = () => {
@@ -34,6 +33,7 @@ const Post_App: React.FC = () => {
   const [avatarURL, setAvatarURL] = useState<string | null>(null);
   const [userLoading, setuserLoading] = useState<string | null>(null);
   const [allTweets, setAllTweets] = useState<Tweet[]>([]);
+  const [tweetSearchTerm, setTweetSearchTerm] = useState<string>('');
   const [likedTweets, setLikedTweets] = useState<string[]>([]);
   const [tweetsLoading, setTweetsLoading] = useState<boolean>(true);
   const [showReplyForm, setShowReplyForm] = useState<string | null>(null);
@@ -62,7 +62,8 @@ const Post_App: React.FC = () => {
         const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchAvatar?uid=${fireAuth.currentUser?.uid}`);
         const data = await response.json();
         if (data.avatar_url !== ""){
-          setAvatarURL(`https://hackathon-ro2txyk6rq-uc.a.run.app${data.avatar_url}`);
+          console.log(data.avatar_url)
+          setAvatarURL(data.avatar_url);
         } else {
           setAvatarURL(defaultAvatar);
         }
@@ -73,6 +74,14 @@ const Post_App: React.FC = () => {
       }
     };
 
+    const fetchfollownumber = async() => {
+      const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchfollow?followuser=${fireAuth.currentUser?.uid}`);
+      const data = await response.json();
+      if(data){
+      setFollowNumber(data.length)
+      }
+    }
+
     const fetchFollowedTweets = async () => {
       try {
         setTweetsLoading(true);
@@ -80,25 +89,38 @@ const Post_App: React.FC = () => {
           const likedTweetsData = await fetchLikedTweets(fireAuth.currentUser.uid);
           setLikedTweets(likedTweetsData);
 
-          const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchfollow?followuser=${fireAuth.currentUser?.uid}`);
+          const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchopenfollow?followuser=${fireAuth.currentUser?.uid}`);
           const data = await response.json();
-          setFollowNumber(data.length)
+          console.log(data)
           if (data) {
+            for (let i =0; i<data.length; i++){
+              if(data[i].followeruid == fireAuth.currentUser?.uid){
+                data[i].followeruid = null
+              }
+            }
             const tweets: Tweet[] = [];
             for (let i = 0; i < data.length; i++) {
               const tweetsResponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/mytweet?uid=${data[i].followeruid}`);
               const tweetsData = await tweetsResponse.json();
+              const avatarresponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchAvatar?uid=${data[i].followeruid}`);
+            const avatardata = await avatarresponse.json();
+              if(tweetsData){
               tweets.push(...tweetsData.map((tweet: any) => ({
                 tweetid: tweet.tweetid,
                 username: tweet.username,
                 time: tweet.time,
                 content: tweet.content,
                 like: tweet.like,
-                isLiked: likedTweetsData.includes(tweet.tweetid),
+                isLiked: likedTweetsData && likedTweetsData.includes(tweet.tweetid),
                 replyCount: tweet.replyCount || 0,
-              })));
+                avatar_url: avatardata.avatar_url || defaultAvatar
+              })));}
             }
             const myresponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/mytweet?uid=${fireAuth.currentUser?.uid}`);
+
+            const myavatarresponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchAvatar?uid=${fireAuth.currentUser?.uid}`);
+            const myavatardata = await myavatarresponse.json();
+
             const mydata = await myresponse.json();
             if (mydata) {
               const myTweets = mydata.map((tweet: any) => ({
@@ -107,8 +129,9 @@ const Post_App: React.FC = () => {
                 time: tweet.time,
                 content: tweet.content,
                 like: tweet.like,
-                isLiked: likedTweetsData.includes(tweet.tweetid),
+                isLiked: likedTweetsData && likedTweetsData.includes(tweet.tweetid),
                 replyCount: tweet.replyCount || 0,
+                avatar_url: myavatardata.avatar_url,
               }));
               tweets.push(...myTweets);
             }
@@ -123,9 +146,11 @@ const Post_App: React.FC = () => {
       }
     };
 
+
+    fetchfollownumber();
     fetchUserProfile();
-    fetchAvatarURL();
     fetchFollowedTweets();
+    fetchAvatarURL();
   }, []);
 
   const handleLikeChange = (tweetid: string, isLiked: boolean, likeCount: number) => {
@@ -163,6 +188,14 @@ const Post_App: React.FC = () => {
     }
   }, [searchTerm]);
 
+  const handleTweetSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTweetSearchTerm(e.target.value);
+  };
+
+  const filteredTweets = allTweets.filter(tweet =>
+    tweet.content.toLowerCase().includes(tweetSearchTerm.toLowerCase())
+  );
+
   const createPost = async (content: string) => {
     return new Promise<void>(async (resolve, reject) => {
       const firebaseUID = fireAuth.currentUser?.uid;
@@ -177,6 +210,8 @@ const Post_App: React.FC = () => {
         return;
       }
       try {
+        const avatarresponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchAvatar?uid=${fireAuth.currentUser?.uid}`);
+        const data = await avatarresponse.json();
         const response = await fetch(
           "https://hackathon-ro2txyk6rq-uc.a.run.app/post",
           {
@@ -208,6 +243,7 @@ const Post_App: React.FC = () => {
             like: 0,
             isLiked: false,
             replyCount: 0,
+            avatar_url: data.avatar_url,
           };
           setAllTweets(prevTweets => [newTweet, ...prevTweets]);
           resolve();
@@ -265,6 +301,15 @@ const Post_App: React.FC = () => {
               <Grid.Col span={2}>
                 <img src={logo} style={{ width: '50px', height: '50px', cursor: 'pointer' }} alt="logo" />
               </Grid.Col>
+              <Grid.Col span={7}>
+              <Input
+                type="text"
+                placeholder="ツイートを検索"
+                value={tweetSearchTerm}
+                onChange={handleTweetSearch}
+                style={{ width: '60%', marginBottom: '20px' }}
+              />
+              </Grid.Col>
             </Grid>
           </Header>
         }
@@ -278,6 +323,7 @@ const Post_App: React.FC = () => {
                 onClick={handleProfileClick}
                 size={isMobile ? 50: 90}
                 style={{ cursor: 'pointer' }}
+                radius="xl"
               />
               <Text size='xl' weight={600} sx={{textAlign: "center"}}>{profileData?.username}</Text>
               <Text size={isMobile ? 'xs':'s'} weight={600} sx={{textAlign: "center"}}>フォロー数：{follownumber}</Text>
@@ -297,7 +343,7 @@ const Post_App: React.FC = () => {
                   <Box key={user.uid} onClick={() => handleUserClick(user.uid)} style={{ cursor: 'pointer' }}>
                     <Grid>
                     <Grid.Col span={4}>
-                    <Avatar src={avatarURL} alt="Profile" size={50} radius="xl">
+                    <Avatar src={user.avatar_url} alt="Profile" size={50} radius="xl">
                     </Avatar>
                     </Grid.Col>
                     <Grid.Col span={4}>
@@ -327,10 +373,10 @@ const Post_App: React.FC = () => {
                   <Loader size="xl" />
                 </Center>
               ) : (
-                allTweets.map((tweet: Tweet, index: number) => (
+                filteredTweets.map((tweet: Tweet, index: number) => (
                   <Box key={index} mb="lg">
                     <Grid>
-                      <Avatar src={defaultAvatar} alt="Profile" size={isMobile ? 50: 70} radius="xl" />
+                      <Avatar src={tweet.avatar_url || defaultAvatar} alt="Profile" size={isMobile ? 50: 70} radius="xl" />
                       <Grid.Col span={2}>
                         <Text size='xl' weight={700}>{tweet.username}</Text>
                       </Grid.Col>
@@ -395,7 +441,8 @@ const Post_App: React.FC = () => {
               <Button
               color='lime'
               sx={{padding: 0,height: isMobilePost ? 40:50,fontSize: 20}}
-              fullWidth onClick={() => createPost(replyContent)}>
+              fullWidth onClick={() => createPost(replyContent)}
+              disabled={!replyContent}>
                 Post
               </Button>
             </Grid.Col>

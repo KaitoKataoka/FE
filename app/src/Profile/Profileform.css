@@ -1,0 +1,7 @@
+.custom-datepicker {
+  display: none; /* DatePickerはデフォルトで隠す */
+}
+
+.hidden-datepicker {
+  position: relative;
+}
