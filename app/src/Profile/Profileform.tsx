@@ -41,16 +41,16 @@ const Profileform: React.FC<FormProps> = ({ onSubmit, onImageChange, imagePrevie
         <Title align="center" order={2}>プロフィール登録</Title>
         <form onSubmit={submit}>
           <Stack>
-            <FileInput label="Profile Image" onChange={onImageChange} required />
+            <FileInput label="プロフィール画像" onChange={onImageChange} required />
             {imagePreview && <Image src={imagePreview} alt="Profile Preview" radius="md" />}
             <TextInput
-              label="Name"
+              label="氏名"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
             <NumberInput
-              label="Age"
+              label="年齢"
               value={age}
               onChange={(value) => setAge(value)}
               required
@@ -58,13 +58,13 @@ const Profileform: React.FC<FormProps> = ({ onSubmit, onImageChange, imagePrevie
               max={80}
             />
             <TextInput
-              label="Username"
+              label="ユーザーネーム"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
             />
             <TextInput
-              label="Birthday"
+              label="生年月日"
               placeholder="Select a date"
               value={birthday ? birthday.toISOString().substring(0, 10) : ''}
               readOnly
@@ -87,7 +87,7 @@ const Profileform: React.FC<FormProps> = ({ onSubmit, onImageChange, imagePrevie
               />
             </div>
             <Textarea
-              label="Comment"
+              label="コメント"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
             />
