@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import debounce from 'lodash.debounce';
 import "./Post_App.css";
 import defaultAvatar from '../assets/default_user.png';
-import logo from '../assets/logo.png';
+import logo from '../assets/logo2.png';
 import LikeButton, { fetchLikedTweets } from './Like_post.tsx';
 import ReplyList from './ReplyList.tsx';
 import ReplyForm from './ReplyForm.tsx';
@@ -15,6 +15,10 @@ import { IconPhoto } from '@tabler/icons-react';
 import HashtagText from './Hashtag.tsx';
 import HashtagRanking from './Hashtag_ranking.tsx';
 import { IconSearch } from '@tabler/icons-react';
+import CircleCreateForm from './CircleForm.tsx';
+import CircleList from './CircleList.tsx';
+import { IconCrown } from '@tabler/icons-react';
+
 
 
 
@@ -54,6 +58,11 @@ const Post_App: React.FC = () => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageOk, setImageOk] = useState<boolean>(false);
   const [allHashtags, setAllHashtags] = useState<string[]>([]);
+  const [refreshTrigger, setRefreshTrigger] = useState(false); // トリガーの状態
+  const [searchCircleTerm, setCircleSearchTerm] = useState('');
+  const [searchCircleResults, setCircleSearchResults] = useState<any[]>([]);
+  const [noCircleResults, setCircleNoResults] = useState(false);
+  const isMobile2 = useMediaQuery(`(max-width: ${1050}px)`);
 
   const extractHashtags = (text: string): string[] => {
     const hashtagRegex = /#[^\s#]+/g;
@@ -219,12 +228,35 @@ const Post_App: React.FC = () => {
     }
   }, 300), []);
 
+  const debouncedcircleSearch = useCallback(debounce(async (query: string) => {
+    if (query.length > 0) {
+      const response = await fetch(
+        `https://hackathon-ro2txyk6rq-uc.a.run.app/searchcircle?circlename=${query}`
+      );
+      const data = await response.json();
+      if (data && data.length > 0) {
+        setCircleSearchResults(data);
+        setNoResults(false);
+      } else {
+        setCircleSearchResults([]);
+        setCircleNoResults(true);
+      }
+    } else {
+      setSearchResults([]);
+      setCircleNoResults(false);
+    }
+  }, 300), []);
+
   useEffect(() => {
     if (searchTerm === '') {
       setSearchResults([]);
       setNoResults(false);
     }
-  }, [searchTerm]);
+    if (searchCircleTerm === ""){
+      setCircleSearchResults([]);
+      setCircleNoResults(false);
+    }
+  }, [searchTerm, searchCircleTerm]);
 
   const handleTweetSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTweetSearchTerm(e.target.value);
@@ -352,6 +384,14 @@ const Post_App: React.FC = () => {
     setuserLoading(null);
   };
 
+  const handleCircleSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setuserLoading("loading");
+    setCircleSearchTerm(query);
+    debouncedcircleSearch(query);
+    setuserLoading(null);
+  };
+
   const formatDateTime = (dateTime: string) => {
     const date = new Date(dateTime);
     const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -361,6 +401,10 @@ const Post_App: React.FC = () => {
 
   const handleUserClick = (uid: string) => {
     navigate(`/userProfile/${uid}`);
+  };
+
+  const handleCircleClick = (circleid: string) => {
+    navigate(`/circle/${circleid}`);
   };
 
   const handlePostClick = async () => {
@@ -373,13 +417,16 @@ const Post_App: React.FC = () => {
     setAllHashtags(prevHashtags => [...prevHashtags, ...hashtags]);
   };
 
+  const handleCircleCreated = () => {
+    setRefreshTrigger(!refreshTrigger); // トリガーを反転させて更新を促す
+  };
 
   return (
     <MantineProvider theme={{ colorScheme: theme.colorScheme }}>
       <AppShell
         padding="md"
         header={
-          <Header height={60} p="xs">
+          <Header height={70} p="xs">
             <Grid justify="space-between" align="center">
               <Grid.Col span={2}>
                 <img src={logo} style={{ width: '50px', height: '50px', cursor: 'pointer' }} alt="logo" />
@@ -398,19 +445,19 @@ const Post_App: React.FC = () => {
           </Header>
         }
         navbar={
-          <Navbar width={{ base: isMobile ? 100 : 350 }} height={1000} p="xs" sx={{ overflowY: 'auto' }}>
+          <Navbar width={{ base: isMobile ?  100 : (isMobile2 ? 160 : 350) }} height={1000} p="xs" sx={{ overflowY: 'auto' }}>
           <Grid>
-            <Grid.Col span={isMobile ? 12 : 5}>
+            <Grid.Col span={isMobile? isMobile2 ? 12 : 8 : 5}>
               <Avatar
                 src={avatarURL || defaultAvatar}
                 alt="Profile"
                 onClick={handleProfileClick}
-                size={isMobile ? 50: 90}
+                size={isMobile2 ? 50: 90}
                 style={{ cursor: 'pointer' }}
                 radius="xl"
               />
               <Text size='xl' weight={600} sx={{textAlign: "center"}}>{profileData?.username}</Text>
-              <Text size={isMobile ? 'xs':'s'} weight={600} sx={{textAlign: "center"}}>フォロー：{follownumber}</Text>
+              <Text size={isMobile2 ? 'xs':'s'} weight={600} sx={{textAlign: "center"}}>フォロー：{follownumber}</Text>
             </Grid.Col>
             <Grid.Col span={isMobile ? 9 : 7}>
             <Box mt="xs">
@@ -446,6 +493,40 @@ const Post_App: React.FC = () => {
                 {noResults && <Text weight={700}>該当無し</Text>}
               </Box>
             </Grid.Col>
+            <Grid.Col>
+            <Input
+                type="text"
+                placeholder="サークルを検索"
+                value={searchCircleTerm}
+                onChange={handleCircleSearch}
+                style={{ width: '60%', marginBottom: '20px' }}
+                icon={<IconSearch size={20} />}
+              />
+              </Grid.Col>
+              {searchCircleResults.map(circle => (
+                  <Box key={circle.circleid}  style={{ cursor: 'pointer' }}>
+                    <Grid.Col span={4}>
+                    <Avatar size={40} radius="xl" mr="md" src={null} />
+                    </Grid.Col>
+                    <Grid.Col span={6}>
+                    <Text
+                    onClick={() => handleCircleClick(circle.circleid)}
+                    weight={700}
+                    sx={{
+                    marginTop: 15}}
+                    >
+                      {circle.circlename}
+                      </Text>
+                    </Grid.Col>
+                  </Box>
+                ))}
+                {noCircleResults && <Text weight={700}>該当無し</Text>}
+              <Grid.Col>
+            <CircleList refreshTrigger={refreshTrigger} />
+            </Grid.Col>
+              <Grid.Col>
+                </Grid.Col>
+            <CircleCreateForm onCircleCreated={handleCircleCreated} />
           </Grid>
         </Navbar>
         }
@@ -507,7 +588,7 @@ const Post_App: React.FC = () => {
             </Grid.Col>
             <Grid.Col span={3}>
               <Card shadow="sm" p="lg">
-                <Title order={2} align="center" mb="md">ランキング</Title>
+                {isMobile ?  <IconCrown size={24} />:<Title order={2} align="center" mb="md" size={isMobile2 ?   (isMobile ? "xs":"s"):"lg"}>ランキング<IconCrown size={24} /></Title>}
                 <ScrollArea style={{ height: '70vh' }}>
                   <HashtagRanking hashtags={allHashtags} />
                 </ScrollArea>

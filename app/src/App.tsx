@@ -8,6 +8,7 @@ import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-route
 import MyProfile_setting from './Post/MyProfile_setting.tsx';
 import OtherProfile from './Post/OtherProfile.tsx';
 import {Loader, Center} from '@mantine/core';
+import CirclePage from './Post/CirclePage.tsx';
 
 
 export interface Post {
@@ -79,6 +80,7 @@ const App: React.FC = () => {
         <Route path="/" element={<Post_App />} />
         <Route path="/profile" element={<MyProfile_setting profileData={profileData}/>} />
         <Route path="/userProfile/:uid" element={<OtherProfile />} />
+        <Route path="/circle/:circleid" element={<CirclePage profileData={profileData}/>} />
       </Routes>
     </Router>
   );

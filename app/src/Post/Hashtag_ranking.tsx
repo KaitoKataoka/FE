@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Text, Card, Badge, Divider } from '@mantine/core';
 import { IconHash } from '@tabler/icons-react';
+import { useMediaQuery } from '@mantine/hooks';
 
 interface HashtagRankingProps {
   hashtags: string[];
@@ -8,11 +9,13 @@ interface HashtagRankingProps {
 
 const HashtagRanking: React.FC<HashtagRankingProps> = ({ hashtags }) => {
   // ハッシュタグのカウントを行うロジックを追加
+
+  const isMobile2 = useMediaQuery(`(max-width: ${1050}px)`);
+  const isMobile = useMediaQuery(`(max-width: ${767}px)`);
   const hashtagCounts: { [key: string]: number } = {};
   hashtags.forEach((hashtag) => {
     if (hashtagCounts[hashtag]) {
       hashtagCounts[hashtag]++;
-      console.log(hashtag, hashtagCounts[hashtag])
     } else {
       hashtagCounts[hashtag] = 1;
     }
@@ -51,8 +54,8 @@ const HashtagRanking: React.FC<HashtagRankingProps> = ({ hashtags }) => {
   };
 
   return (
-    <Card shadow="sm" p="lg" style={{ width: '100%' }}>
-      <Text weight={700} size="lg" mb="md" align="center">
+    <Card shadow="sm" p="lg" style={{ width: isMobile2 ?  (isMobile ? '100%':'100%'):'100%' }}>
+      <Text weight={700} size={isMobile2 ?   (isMobile ? "xs":"xs"):"lg"} mb="md" align="center">
         トレンド
       </Text>
       {sortedHashtags.map(([hashtag, count], index) => (

@@ -205,9 +205,9 @@ const MyProfile_setting: React.FC<MyProfileProps> = ({ profileData }) => {
             </Paper>
           </Box>
           {isopen ? (
-        <Button onClick={handledeleteopen} variant="outline" disabled={loading} color='red'>ツイートを非公開</Button>
+        <Button  onClick={handledeleteopen} variant="outline" disabled={loading} color='red'>ツイートを非公開</Button>
       ) : (
-        <Button onClick={handleopen} disabled={loading} color='cyan'>ツイートを公開</Button>
+        <Button variant="outline" onClick={handleopen} disabled={loading} color='cyan'>ツイートを公開</Button>
       )}
         </Box>
         <Button onClick={signOutWithGoogle} variant="outline" color="red">ログアウト</Button>

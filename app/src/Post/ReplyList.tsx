@@ -7,6 +7,7 @@ import { Box, Text, Button, Divider, Grid, Center, Loader, Avatar, Image, Input 
 import { useNavigate } from 'react-router-dom';
 import { IconSearch } from '@tabler/icons-react';
 import HashtagText from './Hashtag.tsx';
+import { useMediaQuery } from '@mantine/hooks';
 interface Reply {
   replyid: string;
   tweetid: string;
@@ -34,6 +35,9 @@ const ReplyList: React.FC<ReplyListProps> = ({ tweetId, onHashtagsExtracted }) =
   const [showAllReplies, setShowAllReplies] = useState<boolean>(false);
   const navigate = useNavigate();
   const [replySearchTerm, setReplySearchTerm] = useState<string>('');
+  const isMobile2 = useMediaQuery(`(max-width: ${1050}px)`);
+  const isMobile = useMediaQuery(`(max-width: ${767}px)`);
+
 
   const extractHashtags = (text: string): string[] => {
     const hashtagRegex = /#[^\s#]+/g;
@@ -134,7 +138,7 @@ const ReplyList: React.FC<ReplyListProps> = ({ tweetId, onHashtagsExtracted }) =
             <Box key={reply.replyid} mb="lg">
               <Grid>
                 <Grid.Col span={2}>
-                  <Avatar src={reply.avatar_url} onClick={() => handleUserClick(reply.uid)} alt="Profile" size={40} radius="xl" />
+                  <Avatar src={reply.avatar_url} onClick={() => handleUserClick(reply.uid)} alt="Profile" size={isMobile2 ? (isMobile? 20:30):40} radius="xl" />
                 </Grid.Col>
                 <Grid.Col span={8}>
                   <Text size="lg" weight={700}>{reply.username}</Text>
