@@ -3,8 +3,9 @@ import React,{useState, useEffect} from 'react';
 import { fireAuth } from '../firebase.ts';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { Avatar, Box, Button, Paper, Table, Text, Title, Container, Center, Loader } from '@mantine/core';
+import { Avatar, Box, Button, Paper, Table, Text, Title, Container, Center, Loader, Image } from '@mantine/core';
 import defaultAvatar from "../assets/default_user.png";
+import HashtagText from './Hashtag.tsx';
 
 interface MyProfileProps {
   profileData: { name: string; age: number; username: string; avatar: string };
@@ -18,6 +19,8 @@ const MyProfile_setting: React.FC<MyProfileProps> = ({ profileData }) => {
   const [avatarURL, setAvatarURL] = useState<string | null>(null);
   const [follownumber, setFollowNumber] = useState<number | null>(0);
   const [isopen, setIsOpen] = useState(false)
+  const [mybirthday, setMybirthday] = useState<string | null>(null);
+  const [mycomment, setMycomment] = useState<string | null>(null);
 
   useEffect(() => {
     handleMyTweet();
@@ -53,6 +56,16 @@ const MyProfile_setting: React.FC<MyProfileProps> = ({ profileData }) => {
       }
     }
 
+    const fetchMyProfile = async () => {
+      if (fireAuth.currentUser) {
+        const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/getmyprofile?uid=${fireAuth.currentUser?.uid}`);
+        const data = await response.json();
+        console.log(data)
+        setMybirthday(data[0].birthday)
+        setMycomment(data[0].comment)
+      }
+    }
+
     const fetchOpen = async () => {
       const response = await fetch('https://hackathon-ro2txyk6rq-uc.a.run.app/getopen');
       const data = await response.json();
@@ -67,8 +80,9 @@ const MyProfile_setting: React.FC<MyProfileProps> = ({ profileData }) => {
       }
     }
 
-    fetchOpen()
-    fetchFollows()
+    fetchOpen();
+    fetchFollows();
+    fetchMyProfile();
     fetchAvatarURL();
   }, [profileData]);
 
@@ -184,8 +198,11 @@ const MyProfile_setting: React.FC<MyProfileProps> = ({ profileData }) => {
           </Avatar>
           <Box ml="md">
             <Title order={2}>{profileData.username}</Title>
-            <Text>{profileData.age}歳</Text>
-            <Text>フォロー数：{follownumber}</Text>
+            {mybirthday && <Text>誕生日：{mybirthday}</Text>}
+            <Text>フォロー：{follownumber}</Text>
+            <Paper shadow="sm" p="xs">
+            <Text sx={{textAlign: "center"}}>{mycomment}</Text>
+            </Paper>
           </Box>
           {isopen ? (
         <Button onClick={handledeleteopen} variant="outline" disabled={loading} color='red'>ツイートを非公開</Button>
@@ -202,14 +219,15 @@ const MyProfile_setting: React.FC<MyProfileProps> = ({ profileData }) => {
           </tr>
         </thead>
         <tbody>
-          {MyTweetData && MyTweetData.map((tweet: any, index: number) => (
+          {MyTweetData && MyTweetData.slice().reverse().map((tweet: any, index: number) => (
             <tr key={index}>
               <td>
                 <Text
                 color='gray'
                 >
                   {formatDateTime(tweet.time)}</Text>
-                <Text>{tweet.content}</Text>
+                  {tweet.image && <Image src={tweet.image} style={{ maxWidth: '30%', height: 'auto'}} alt="Tweet Image"/>}
+                  <HashtagText text={tweet.content} />
               </td>
             </tr>
           ))}

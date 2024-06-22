@@ -2,7 +2,8 @@ import React,{useState, useEffect} from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import defaultAvatar from '../assets/default_user.png';
 import { fireAuth } from '../firebase.ts';
-import { Box, Text, Button, Loader, Table, Container, Avatar, Paper, Title, Center } from '@mantine/core';
+import { Box, Text, Button, Loader, Table, Container, Avatar, Paper, Title, Center, Image } from '@mantine/core';
+import HashtagText from './Hashtag.tsx';
 
 const OtherProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -13,12 +14,15 @@ const OtherProfile: React.FC = () => {
   const [avatarURL, setAvatarURL] = useState<string | null>(null);
   const [defaultuser, setDefaultuser] = useState<string | null>(defaultAvatar);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [mybirthday, setMybirthday] = useState<string | null>(null);
+  const [mycomment, setMycomment] = useState<string | null>(null);
 
   useEffect(() => {
     if (uid) {
       fetchOtherUserProfile(uid);
       handleOtherTweet(uid);
       handleOtherAvatar(uid);
+      fetchOtherProfile(uid);
       if (fireAuth.currentUser?.uid){
       checkIfFollowing(uid);
       }
@@ -69,6 +73,19 @@ const OtherProfile: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const fetchOtherProfile = async(uid: string) => {
+    try {
+      const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/getmyprofile?uid=${uid}`);
+      const data = await response.json();
+      setMybirthday(data[0].birthday)
+      setMycomment(data[0].comment)
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch other profile', error);
+      setLoading(false);
+    }
+  }
 
 
   const handleRegisterFollow = async() => {
@@ -174,7 +191,8 @@ const checkIfFollowing = async (uid: string) => {
       </Avatar>
       <Box ml="md">
       <Title>{otherProfile.username}</Title>
-      <Text>年齢: {otherProfile.age}</Text>
+      {mybirthday && <Text>誕生日：{mybirthday}</Text>}
+      <Text>{mycomment}</Text>
       </Box>
       </Box>
       {isFollowing ? (
@@ -190,7 +208,7 @@ const checkIfFollowing = async (uid: string) => {
           </tr>
         </thead>
         <tbody>
-          {OtherTweetData && OtherTweetData.map((tweet: any, index: number) => (
+          {OtherTweetData && OtherTweetData.slice().reverse().map((tweet: any, index: number) => (
             <tr key={index}>
               <td>
               <Text
@@ -203,9 +221,8 @@ const checkIfFollowing = async (uid: string) => {
               >
                 {formatDateTime(tweet.time)}
                 </Text>
-              <Text
-              size='md'
-              >{tweet.content}</Text>
+                {tweet.image && <Image src={tweet.image} style={{ maxWidth: '30%', height: 'auto'}} alt="Tweet Image"/>}
+                <HashtagText text={tweet.content} />
               </td>
             </tr>
           ))}

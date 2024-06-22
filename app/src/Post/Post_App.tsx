@@ -8,18 +8,27 @@ import logo from '../assets/logo.png';
 import LikeButton, { fetchLikedTweets } from './Like_post.tsx';
 import ReplyList from './ReplyList.tsx';
 import ReplyForm from './ReplyForm.tsx';
-import { MantineProvider, AppShell, Navbar, Header, Text, Input, Avatar, Container, Grid, Button, Center, Box, Textarea, useMantineTheme, Divider, Loader, Flex} from '@mantine/core';
+import { MantineProvider, AppShell, Navbar, Header, Text, Input, Avatar, Container, Grid, Button, Center, Box, Textarea, useMantineTheme, Divider, Loader, FileInput, Image, Card, Title, ScrollArea} from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { IconPhoto } from '@tabler/icons-react';
+import HashtagText from './Hashtag.tsx';
+import HashtagRanking from './Hashtag_ranking.tsx';
+import { IconSearch } from '@tabler/icons-react';
+
+
 
 interface Tweet {
   tweetid: string;
   username: string;
   time: string;
   content: string;
+  uid: string;
   like: number;
   isLiked: boolean;
   replyCount: number;
   avatar_url: string;
+  image?: string;
 }
 
 const Post_App: React.FC = () => {
@@ -41,6 +50,15 @@ const Post_App: React.FC = () => {
   const isMobile = useMediaQuery(`(max-width: ${767}px)`);
   const isMobilePost = useMediaQuery(`(max-width: ${970}px)`);
   const [follownumber, setFollowNumber] = useState<number | null>(0)
+  const [tweetImage, setTweetImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageOk, setImageOk] = useState<boolean>(false);
+  const [allHashtags, setAllHashtags] = useState<string[]>([]);
+
+  const extractHashtags = (text: string): string[] => {
+    const hashtagRegex = /#[^\s#]+/g;
+    return text.match(hashtagRegex) || [];
+  };
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -82,69 +100,6 @@ const Post_App: React.FC = () => {
       }
     }
 
-    const fetchFollowedTweets = async () => {
-      try {
-        setTweetsLoading(true);
-        if (fireAuth.currentUser) {
-          const likedTweetsData = await fetchLikedTweets(fireAuth.currentUser.uid);
-          setLikedTweets(likedTweetsData);
-
-          const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchopenfollow?followuser=${fireAuth.currentUser?.uid}`);
-          const data = await response.json();
-          console.log(data)
-          if (data) {
-            for (let i =0; i<data.length; i++){
-              if(data[i].followeruid == fireAuth.currentUser?.uid){
-                data[i].followeruid = null
-              }
-            }
-            const tweets: Tweet[] = [];
-            for (let i = 0; i < data.length; i++) {
-              const tweetsResponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/mytweet?uid=${data[i].followeruid}`);
-              const tweetsData = await tweetsResponse.json();
-              const avatarresponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchAvatar?uid=${data[i].followeruid}`);
-            const avatardata = await avatarresponse.json();
-              if(tweetsData){
-              tweets.push(...tweetsData.map((tweet: any) => ({
-                tweetid: tweet.tweetid,
-                username: tweet.username,
-                time: tweet.time,
-                content: tweet.content,
-                like: tweet.like,
-                isLiked: likedTweetsData && likedTweetsData.includes(tweet.tweetid),
-                replyCount: tweet.replyCount || 0,
-                avatar_url: avatardata.avatar_url || defaultAvatar
-              })));}
-            }
-            const myresponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/mytweet?uid=${fireAuth.currentUser?.uid}`);
-
-            const myavatarresponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchAvatar?uid=${fireAuth.currentUser?.uid}`);
-            const myavatardata = await myavatarresponse.json();
-
-            const mydata = await myresponse.json();
-            if (mydata) {
-              const myTweets = mydata.map((tweet: any) => ({
-                tweetid: tweet.tweetid,
-                username: tweet.username,
-                time: tweet.time,
-                content: tweet.content,
-                like: tweet.like,
-                isLiked: likedTweetsData && likedTweetsData.includes(tweet.tweetid),
-                replyCount: tweet.replyCount || 0,
-                avatar_url: myavatardata.avatar_url,
-              }));
-              tweets.push(...myTweets);
-            }
-            tweets.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
-            setAllTweets(tweets);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch followed tweets:', error);
-      }finally {
-        setTweetsLoading(false); // ツイートの読み込み終了
-      }
-    };
 
 
     fetchfollownumber();
@@ -152,6 +107,89 @@ const Post_App: React.FC = () => {
     fetchFollowedTweets();
     fetchAvatarURL();
   }, []);
+
+
+  const fetchFollowedTweets = async () => {
+    try {
+      setTweetsLoading(true);
+      if (fireAuth.currentUser) {
+        const likedTweetsData = await fetchLikedTweets(fireAuth.currentUser.uid);
+        setLikedTweets(likedTweetsData);
+
+        const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchopenfollow?followuser=${fireAuth.currentUser?.uid}`);
+        const data = await response.json();
+        if (data) {
+          for (let i =0; i<data.length; i++){
+            if(data[i].followeruid == fireAuth.currentUser?.uid){
+              data[i].followeruid = null
+            }
+          }
+            for (let i = 0; i<data.length; i++){
+              for (let u = i + 1; u<data.length; u++){
+                if (data[i].followeruid == data[u].followeruid){
+                  data[i].followeruid = null
+                }
+              }
+            }
+
+            console.log(data)
+          const tweets: Tweet[] = [];
+          for (let i = 0; i < data.length; i++) {
+            const tweetsResponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/mytweet?uid=${data[i].followeruid}`);
+            console.log(data)
+            const tweetsData = await tweetsResponse.json();
+            console.log(tweetsData)
+            const avatarresponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchAvatar?uid=${data[i].followeruid}`);
+          const avatardata = await avatarresponse.json();
+            if(tweetsData){
+            tweets.push(...tweetsData.map((tweet: any) => ({
+              tweetid: tweet.tweetid,
+              username: tweet.username,
+              time: tweet.time,
+              content: tweet.content,
+              uid: tweet.uid,
+              like: tweet.like,
+              isLiked: likedTweetsData && likedTweetsData.includes(tweet.tweetid),
+              replyCount: tweet.replyCount || 0,
+              avatar_url: avatardata.avatar_url || defaultAvatar,
+              image: tweet.image
+            })));}
+          }
+
+          const myavatarresponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchAvatar?uid=${fireAuth.currentUser?.uid}`);
+          const myavatardata = await myavatarresponse.json();
+
+          const myresponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/mytweet?uid=${fireAuth.currentUser?.uid}`);
+          const mydata = await myresponse.json();
+          console.log(mydata)
+          if (mydata) {
+            const myTweets = mydata.map((tweet: any) => ({
+              tweetid: tweet.tweetid,
+              username: tweet.username,
+              time: tweet.time,
+              content: tweet.content,
+              uid: tweet.uid,
+              like: tweet.like,
+              isLiked: likedTweetsData && likedTweetsData.includes(tweet.tweetid),
+              replyCount: tweet.replyCount || 0,
+              avatar_url: myavatardata.avatar_url,
+              image: tweet.image
+            }));
+            tweets.push(...myTweets);
+          }
+          tweets.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+          setAllTweets(tweets);
+
+          const allHashtags = tweets.flatMap(tweet => extractHashtags(tweet.content));
+          setAllHashtags(allHashtags);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch followed tweets:', error);
+    }finally {
+      setTweetsLoading(false); // ツイートの読み込み終了
+    }
+  };
 
   const handleLikeChange = (tweetid: string, isLiked: boolean, likeCount: number) => {
     setLikedTweets(prev => isLiked ? [...prev, tweetid] : prev.filter(id => id !== tweetid));
@@ -196,13 +234,34 @@ const Post_App: React.FC = () => {
     tweet.content.toLowerCase().includes(tweetSearchTerm.toLowerCase())
   );
 
+  const uploadImageAndGetUrl = async (file: File): Promise<string> => {
+    const storage = getStorage();
+    const storageRef = ref(storage, `tweet_images/${file.name}`);
+    await uploadBytes(storageRef, file);
+    return await getDownloadURL(storageRef);
+  };
+
+  const handleImageChange = (file: File | null) => {
+    if (file) {
+      setTweetImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setTweetImage(null);
+      setImagePreview(null);
+    }
+  };
+
   const createPost = async (content: string) => {
+    setImageOk(true)
     return new Promise<void>(async (resolve, reject) => {
       const firebaseUID = fireAuth.currentUser?.uid;
       let errormessage = "";
       if (!content) {
-        alert("tweet is empty");
-        errormessage = "tweet is empty";
+        content=""
       }
       if (errormessage) {
         console.log(errormessage);
@@ -210,6 +269,11 @@ const Post_App: React.FC = () => {
         return;
       }
       try {
+        let image_url = "";
+        if (tweetImage) {
+          image_url = await uploadImageAndGetUrl(tweetImage);
+        }
+
         const avatarresponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchAvatar?uid=${fireAuth.currentUser?.uid}`);
         const data = await avatarresponse.json();
         const response = await fetch(
@@ -224,6 +288,7 @@ const Post_App: React.FC = () => {
               content: content,
               uid: firebaseUID,
               like: 0,
+              image: image_url,
             }),
           }
         );
@@ -240,17 +305,24 @@ const Post_App: React.FC = () => {
             username: profileData?.username || "",
             time: new Date().toISOString(),
             content: content,
+            uid: "",
             like: 0,
             isLiked: false,
             replyCount: 0,
             avatar_url: data.avatar_url,
+            image: ""
           };
           setAllTweets(prevTweets => [newTweet, ...prevTweets]);
+          setTweetImage(null);
+          setImagePreview(null);
+          setReplyContent("");
+          setImageOk(false)
           resolve();
         }
       } catch (error) {
         console.error("failed tweet", error);
         alert("failed tweet");
+        setImageOk(false)
         reject(error);
       }
     });
@@ -291,6 +363,17 @@ const Post_App: React.FC = () => {
     navigate(`/userProfile/${uid}`);
   };
 
+  const handlePostClick = async () => {
+    await createPost(replyContent);
+    // 新しいツイートを取得するための関数を呼び出します
+    fetchFollowedTweets();
+  };
+
+  const handleHashtagsExtracted = (hashtags: string[]) => {
+    setAllHashtags(prevHashtags => [...prevHashtags, ...hashtags]);
+  };
+
+
   return (
     <MantineProvider theme={{ colorScheme: theme.colorScheme }}>
       <AppShell
@@ -308,6 +391,7 @@ const Post_App: React.FC = () => {
                 value={tweetSearchTerm}
                 onChange={handleTweetSearch}
                 style={{ width: '60%', marginBottom: '20px' }}
+                icon={<IconSearch size={20} />}
               />
               </Grid.Col>
             </Grid>
@@ -326,17 +410,18 @@ const Post_App: React.FC = () => {
                 radius="xl"
               />
               <Text size='xl' weight={600} sx={{textAlign: "center"}}>{profileData?.username}</Text>
-              <Text size={isMobile ? 'xs':'s'} weight={600} sx={{textAlign: "center"}}>フォロー数：{follownumber}</Text>
+              <Text size={isMobile ? 'xs':'s'} weight={600} sx={{textAlign: "center"}}>フォロー：{follownumber}</Text>
             </Grid.Col>
             <Grid.Col span={isMobile ? 9 : 7}>
             <Box mt="xs">
               <Grid.Col span={9}>
                 <Input
                   type="text"
-                  placeholder="ユーザーを検索"
+                  placeholder="ユーザー検索"
                   value={searchTerm}
                   onChange={handleSearch}
                   style={{width: isMobile ? '300%' :  '100%' }}
+                  icon={<IconSearch size={20} />}
                 />
               </Grid.Col>
                 {searchResults.map(user => (
@@ -367,16 +452,17 @@ const Post_App: React.FC = () => {
       >
         <Container>
           <Grid>
-            <Grid.Col span={12}>
+            <Grid.Col span={9}>
               {tweetsLoading ? (
                 <Center style={{ height: '100vh' }}>
                   <Loader size="xl" />
                 </Center>
               ) : (
-                filteredTweets.map((tweet: Tweet, index: number) => (
+                <>
+                {filteredTweets.map((tweet: Tweet, index: number) => (
                   <Box key={index} mb="lg">
                     <Grid>
-                      <Avatar src={tweet.avatar_url || defaultAvatar} alt="Profile" size={isMobile ? 50: 70} radius="xl" />
+                      <Avatar src={tweet.avatar_url || null} alt="Profile" onClick={() => handleUserClick(tweet.uid)} size={isMobile ? 50: 70} radius="xl" />
                       <Grid.Col span={2}>
                         <Text size='xl' weight={700}>{tweet.username}</Text>
                       </Grid.Col>
@@ -386,11 +472,9 @@ const Post_App: React.FC = () => {
                       </Grid>
 
                       <Grid>
-                      <Grid.Col span={8}>
-                        <Text size="xl" weight={600}
-                        sx={{textAlign: "center"}}>
-                          {tweet.content}
-                          </Text>
+                      <Grid.Col span={8} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      {tweet.image && <Image src={tweet.image}  style={{ maxWidth: '30%', height: 'auto'}} alt="Tweet Image" />}
+                          <HashtagText text={tweet.content} />
                       </Grid.Col>
                     </Grid>
 
@@ -406,7 +490,7 @@ const Post_App: React.FC = () => {
                         />
                       </Grid.Col>
                       <Grid.Col span={6}>
-                    <ReplyList tweetId={tweet.tweetid} />
+                    <ReplyList tweetId={tweet.tweetid} onHashtagsExtracted={handleHashtagsExtracted}/>
                     {showReplyForm === tweet.tweetid && (
                       <ReplyForm
                         tweetId={tweet.tweetid}
@@ -417,11 +501,24 @@ const Post_App: React.FC = () => {
                     </Grid>
                     <Divider my="sm" />
                   </Box>
-                ))
+                ))}
+                </>
               )}
+            </Grid.Col>
+            <Grid.Col span={3}>
+              <Card shadow="sm" p="lg">
+                <Title order={2} align="center" mb="md">ランキング</Title>
+                <ScrollArea style={{ height: '70vh' }}>
+                  <HashtagRanking hashtags={allHashtags} />
+                </ScrollArea>
+              </Card>
             </Grid.Col>
           </Grid>
         </Container>
+
+        {imageOk ? (
+          <Loader size="xl" />
+        ):(
         <Box
         sx={{
           position: 'fixed',
@@ -429,25 +526,37 @@ const Post_App: React.FC = () => {
           width: '60%',
           padding: '10px',
         }}>
+          {imagePreview && <Image src={imagePreview} style={{ maxWidth: '30%', height: 'auto'}} alt="Profile Preview" radius="md" />}
           <Grid>
-            <Grid.Col span={8}>
+            <Grid.Col span={7}>
               <Textarea
-                placeholder="What's happening?"
+                placeholder="今どうしてる?"
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.currentTarget.value)}
+              />
+            </Grid.Col>
+            <Grid.Col span={1}>
+              <FileInput
+                onChange={handleImageChange}
+                accept="image/*"
+                icon={<IconPhoto size={27} />}
+                style={{ width: '5%', marginTop: "10px" }}
               />
             </Grid.Col>
             <Grid.Col span={isMobile ? 3:2}>
               <Button
               color='lime'
               sx={{padding: 0,height: isMobilePost ? 40:50,fontSize: 20}}
-              fullWidth onClick={() => createPost(replyContent)}
-              disabled={!replyContent}>
+              fullWidth onClick={() =>
+                handlePostClick()
+              }
+              disabled={!replyContent && !tweetImage}>
                 Post
               </Button>
             </Grid.Col>
           </Grid>
         </Box>
+        )}
       </AppShell>
     </MantineProvider>
   );

@@ -3,33 +3,46 @@ import ReplyLikeButton from './Reply_like.tsx';
 import { fireAuth } from '../firebase.ts';
 import { fetchLikedReply } from './Reply_like.tsx';
 import ReplyForm from './ReplyForm.tsx';
-import { Box, Text, Button, Divider, Grid, Center, Loader, Avatar } from '@mantine/core';
-import defaultAvatar from '../assets/default_user.png';
-
+import { Box, Text, Button, Divider, Grid, Center, Loader, Avatar, Image, Input } from '@mantine/core';
+import { useNavigate } from 'react-router-dom';
+import { IconSearch } from '@tabler/icons-react';
+import HashtagText from './Hashtag.tsx';
 interface Reply {
   replyid: string;
   tweetid: string;
   replycontent: string;
+  uid: string;
   username: string;
   time: string;
   like: number;
   isLiked: boolean;
-  avatar_url: string
+  avatar_url: string;
+  image: string
 }
 
 interface ReplyListProps {
   tweetId: string;
+  onHashtagsExtracted: (hashtags: string[]) => void;
 }
 
-const ReplyList: React.FC<ReplyListProps> = ({ tweetId }) => {
+const ReplyList: React.FC<ReplyListProps> = ({ tweetId, onHashtagsExtracted }) => {
   const [replies, setReplies] = useState<Reply[]>([]);
   const [likedTweets, setLikedTweets] = useState<string[]>([]);
   const [replyLoading, setReplyLoading] = useState<boolean>(true);
   const [showReplyForm, setShowReplyForm] = useState<boolean>(false);
   const [avatarURL, setAvatarURL] = useState<string | null>(null);
   const [showAllReplies, setShowAllReplies] = useState<boolean>(false);
+  const navigate = useNavigate();
+  const [replySearchTerm, setReplySearchTerm] = useState<string>('');
 
+  const extractHashtags = (text: string): string[] => {
+    const hashtagRegex = /#[^\s#]+/g;
+    return text.match(hashtagRegex) || [];
+  };
 
+  useEffect(() => {
+    fetchReplies();
+  }, [tweetId]);
 
   const fetchReplies = useCallback(async () => {
     try {
@@ -41,9 +54,6 @@ const ReplyList: React.FC<ReplyListProps> = ({ tweetId }) => {
       }
       const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchreply?tweetid=${tweetId}`);
       const data = await response.json();
-      console.log(tweetId);
-      console.log(data);
-      console.log(data[0].uid)
       const avatarresponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchAvatar?uid=${data[0].uid}`);
       const avatardata = await avatarresponse.json();
 
@@ -52,14 +62,18 @@ const ReplyList: React.FC<ReplyListProps> = ({ tweetId }) => {
           replyid: reply.replyid,
           tweetid: reply.tweetid,
           replycontent: reply.replycontent,
+          uid: reply.uid,
           username: reply.username,
           time: reply.time,
           like: reply.like,
           isLiked: likedTweetsData.includes(reply.replyid),
-          avatar_url: avatardata.avatar_url
+          avatar_url: avatardata.avatar_url,
+          image: reply.image
         }));
         setReplies(replys);
-        console.log("Replies fetched successfully:", replys); // Debug log
+        console.log("Replies fetched successfully:", replys);
+        const allHashtags = replys.flatMap(reply => extractHashtags(reply.replycontent));
+        onHashtagsExtracted(Array.from(new Set(allHashtags)));
       }
     } catch (error) {
       console.error('Error fetching replies:', error);
@@ -67,10 +81,6 @@ const ReplyList: React.FC<ReplyListProps> = ({ tweetId }) => {
       setReplyLoading(false);
     }
   }, [tweetId]);
-
-  useEffect(() => {
-    fetchReplies();
-  }, [fetchReplies, tweetId]);
 
   const handleLikeChange = (replyid: string, isLiked: boolean, likeCount: number) => {
     setLikedTweets(prev => isLiked ? [...prev, replyid] : prev.filter(id => id !== replyid));
@@ -92,6 +102,18 @@ const ReplyList: React.FC<ReplyListProps> = ({ tweetId }) => {
     fetchReplies(); // 返信が投稿された後に返信リストを再取得
   };
 
+  const handleUserClick = (uid: string) => {
+    navigate(`/userProfile/${uid}`);
+  };
+
+  const filteredReply = replies.filter(reply =>
+    reply.replycontent.toLowerCase().includes(replySearchTerm.toLowerCase())
+  );
+
+  const handleReplySearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setReplySearchTerm(e.target.value);
+  };
+
   return (
     <Box>
       {replyLoading ? (
@@ -100,16 +122,25 @@ const ReplyList: React.FC<ReplyListProps> = ({ tweetId }) => {
         </Center>
       ) : (
         <>
-          {replies.slice(0, showAllReplies ? replies.length : 2).map((reply) => (
+        <Input
+                type="text"
+                placeholder="返信を検索"
+                value={replySearchTerm}
+                onChange={handleReplySearch}
+                style={{ width: '60%', marginBottom: '20px' }}
+                icon={<IconSearch size={20} />}
+              />
+          {filteredReply.slice(0, showAllReplies ? replies.length : 2).reverse().map((reply) => (
             <Box key={reply.replyid} mb="lg">
               <Grid>
                 <Grid.Col span={2}>
-                  <Avatar src={reply.avatar_url} alt="Profile" size={40} radius="xl" />
+                  <Avatar src={reply.avatar_url} onClick={() => handleUserClick(reply.uid)} alt="Profile" size={40} radius="xl" />
                 </Grid.Col>
                 <Grid.Col span={8}>
                   <Text size="lg" weight={700}>{reply.username}</Text>
                   <Text size="s" color='gray'>{formatDateTime(reply.time)}</Text>
-                  <Text weight={600}>{reply.replycontent}</Text>
+                  {reply.image && <Image src = {reply.image} style={{ maxWidth: '30%', height: 'auto'}}  radius="md"></Image>}
+                  <HashtagText text={reply.replycontent} />
                   <ReplyLikeButton
                     replyid={reply.replyid}
                     initialLike={reply.like}

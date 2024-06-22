@@ -5,6 +5,7 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './Profileform.css';
 
+
 type FormProps = {
   onSubmit: (name: string, age: number, username: string, birthday: string, comment: string) => void;
   onImageChange: (file: File | null) => void;

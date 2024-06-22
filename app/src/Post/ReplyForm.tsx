@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { fireAuth } from '../firebase.ts';
-import { Box, Button, Textarea } from '@mantine/core';
+import { Box, Button, Textarea, FileInput, Image } from '@mantine/core';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { IconPhoto } from '@tabler/icons-react';
 
 interface ReplyFormProps {
   tweetId: string;
@@ -11,6 +13,8 @@ interface ReplyFormProps {
 const ReplyForm: React.FC<ReplyFormProps> = ({ tweetId, onReplyPosted }) => {
   const [replyContent, setReplyContent] = useState('');
   const [profileData, setProfileData] = useState<{ name: string; age: number; username: string; avatar_url: string;} | null>(null);
+  const [replyImage, setReplyImage] = useState<File | null>(null);
+  const [imagePreview, setReplyPreview] = useState<string | null>(null);
 
 useEffect(() => {
 const fetchUserProfile = async () => {
@@ -30,16 +34,18 @@ fetchUserProfile();
 }, []);
 
   const handleReplySubmit = async () => {
-    if (replyContent.trim() === "") {
-      alert("返信内容を入力してください");
-      return;
-    }
+
+    let image_url = "";
+        if (replyImage) {
+          image_url = await uploadImageAndGetUrl(replyImage);
+        }
 
     const reply = {
       replycontent: replyContent,
       uid: fireAuth.currentUser?.uid,
       tweetid: tweetId,
       username: profileData?.username,
+      image: image_url,
     };
 
     try {
@@ -53,6 +59,8 @@ fetchUserProfile();
 
       if (response.ok) {
         setReplyContent('');
+        setReplyImage(null);
+        setReplyPreview(null);
         onReplyPosted();
       }
     } catch (error) {
@@ -60,8 +68,31 @@ fetchUserProfile();
     }
   };
 
+  const uploadImageAndGetUrl = async (file: File): Promise<string> => {
+    const storage = getStorage();
+    const storageRef = ref(storage, `tweet_images/${file.name}`);
+    await uploadBytes(storageRef, file);
+    return await getDownloadURL(storageRef);
+  };
+
+  const handleImageChange = (file: File | null) => {
+    if (file) {
+      setReplyImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setReplyPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setReplyImage(null);
+      setReplyPreview(null);
+    }
+  };
+
+
   return (
     <Box mt="sm">
+      {imagePreview && <Image src={imagePreview} style={{ maxWidth: '30%', height: 'auto'}} alt="Profile Preview" radius="md" />}
       <Textarea
         value={replyContent}
         onChange={(e) => setReplyContent(e.target.value)}
@@ -69,9 +100,15 @@ fetchUserProfile();
         autosize
         minRows={2}
       />
+      <FileInput
+          onChange={handleImageChange}
+          accept="image/*"
+          icon={<IconPhoto size={27} />}
+          style={{ width: '5%', marginTop: '20px' }}
+              />
       <Button
       color='indigo'
-      onClick={handleReplySubmit} mt="sm" disabled={!replyContent}>返信</Button>
+      onClick={handleReplySubmit} mt="sm" disabled={!replyContent && !replyImage}>返信</Button>
     </Box>
   );
 };
