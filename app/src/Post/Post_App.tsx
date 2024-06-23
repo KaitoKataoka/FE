@@ -445,7 +445,7 @@ const Post_App: React.FC = () => {
           </Header>
         }
         navbar={
-          <Navbar width={{ base: isMobile ?  100 : (isMobile2 ? 160 : 350) }} height={1000} p="xs" sx={{ overflowY: 'auto' }}>
+          <Navbar width={{ base: isMobile ?  100 : (isMobile2 ? 160 : 350) }} height={650} p="xs" sx={{ overflowY: 'auto' }}>
           <Grid>
             <Grid.Col span={isMobile? isMobile2 ? 12 : 8 : 5}>
               <Avatar
