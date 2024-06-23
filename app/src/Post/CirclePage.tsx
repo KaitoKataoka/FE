@@ -6,12 +6,11 @@ import { useMediaQuery } from '@mantine/hooks';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import defaultAvatar from '../assets/default_user.png';
 import HashtagText from './Hashtag.tsx';
-import LikeButton from './Like_post.tsx';
+import LikeCircleButton from './Like_circlepost.tsx';
 import ReplyList from './ReplyList.tsx';
-import ReplyForm from './ReplyForm.tsx';
 import { IconPhoto, IconSearch } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
-import debounce from 'lodash.debounce';
+import { fetchLikedTweets } from './Like_post.tsx';
 
 interface CircleTweet {
   circleid: string;
@@ -47,15 +46,11 @@ const CirclePage: React.FC<MyProfileProps> = ({ profileData }) => {
   const isMobilePost = useMediaQuery(`(max-width: 970px)`);
   const theme = useMantineTheme();
   const navigate = useNavigate();
-  const [userLoading, setuserLoading] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [noResults, setNoResults] = useState(false);
   const [tweetSearchTerm, setTweetSearchTerm] = useState<string>('');
   const [likedTweets, setLikedTweets] = useState<string[]>([]);
   const [avatarURL, setAvatarURL] = useState<string | null>(null);
+  const [tweetsLoading, setTweetsLoading] = useState<boolean>(true);
 
-  const [postid, setpostid] = useState<string | null>(null);
   const [circlepostid, setcirclepostid] = useState<string | null>(null);
 
   useEffect(() => {
@@ -121,17 +116,48 @@ const CirclePage: React.FC<MyProfileProps> = ({ profileData }) => {
 
   const fetchCircleTweets = async () => {
     try {
-      const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/getcircletweet?circleid=${circleid}`);
-      if (response.ok) {
-        const data = await response.json();
-        setAllTweets(data || []);
-      }
+        setTweetsLoading(true);
+        if (fireAuth.currentUser) {
+            const likedTweetsData = await fetchLikedTweets(fireAuth.currentUser.uid);
+            setLikedTweets(likedTweetsData);
+
+            const avatarresponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchAvatar?uid=${fireAuth.currentUser?.uid}`);
+            const avatardata = await avatarresponse.json();
+            if (avatardata.avatar_url !== ""){
+                setAvatarURL(avatardata.avatar_url);
+            } else {
+                setAvatarURL(defaultAvatar);
+            }
+
+            const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/getcircletweet?circleid=${circleid}`);
+            if (response.ok) {
+                const data = await response.json();
+                if(data){
+                    const newTweets = data.map((tweet: any) => ({
+                        circleid: tweet.circleid,
+                        tweetid: tweet.tweetid,
+                        username: tweet.username,
+                        time: tweet.time,
+                        content: tweet.content,
+                        uid: tweet.uid,
+                        like: tweet.like,
+                        isLiked: likedTweetsData && likedTweetsData.includes(tweet.tweetid),
+                        replyCount: tweet.replyCount || 0,
+                        avatar_url: avatardata.avatar_url || defaultAvatar,
+                        image: tweet.image
+                    }));
+                    newTweets.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+                    setAllTweets(newTweets);  // 全ツイートを一度に設定
+                }
+            }
+        }
     } catch (err) {
-      setError('サークルの取得に失敗しました');
+        setError('サークルの取得に失敗しました');
     } finally {
-      setLoading(false);
+        setTweetsLoading(false); // ツイートの読み込み終了
     }
-  };
+};
+
 
   const handleCircleRegister = async () => {
     try {
@@ -273,12 +299,9 @@ const CirclePage: React.FC<MyProfileProps> = ({ profileData }) => {
         return;
       }
 
-      const postData = await postResponse.json();
-      setpostid(postData.tweetid)
-
       const newTweet: CircleTweet = {
         circleid: circleid || "",
-        tweetid: postData.tweetid || "", // 通常のツイートIDを追加
+        tweetid: "", // 通常のツイートIDを追加
         username: profileData?.username || "",
         time: new Date().toISOString(),
         content: content,
@@ -366,65 +389,72 @@ const CirclePage: React.FC<MyProfileProps> = ({ profileData }) => {
         }
       >
         <Container>
-          {isMember ? (
-            <>
-              {isCreator ? (
-                <Text>あなたはこのサークルの作成者です</Text>
-              ) : (
-                <Button onClick={handleCircleUnregister} color="red">
-                  サークルを脱退
-                </Button>
-              )}
-              <Divider my="sm" />
-                {allTweets.length > 0 ? (
-                  filteredTweets.slice().reverse().map((tweet: CircleTweet, index: number) => (
-                    <Box key={index} mb="lg">
-                      <Grid>
-                        <Avatar src={avatarURL || defaultAvatar} alt="Profile" size={50} radius="xl" />
-                        <Grid.Col span={2}>
-                          <Text size='xl' weight={700}>{tweet.username}</Text>
-                        </Grid.Col>
-                        <Grid.Col span={9}>
-                          <Text size="md" color="gray">{formatDateTime(tweet.time)}</Text>
-                        </Grid.Col>
-                      </Grid>
+  {isMember ? (
+    <>
+      {isCreator ? (
+        <Text>あなたはこのサークルの作成者です</Text>
+      ) : (
+        <Button onClick={handleCircleUnregister} color="red">
+          サークルを脱退
+        </Button>
+      )}
+      {tweetsLoading ? (
+        <Center style={{ height: '100vh' }}>
+          <Loader size="xl" />
+        </Center>
+      ) : (
+        <>
+          <Divider my="sm" />
+          {allTweets.length > 0 ? (
+            filteredTweets.slice().reverse().map((tweet: CircleTweet, index: number) => (
+              <Box key={index} mb="lg">
+                <Grid>
+                  <Avatar src={avatarURL || defaultAvatar} alt="Profile" size={50} radius="xl" />
+                  <Grid.Col span={2}>
+                    <Text size='xl' weight={700}>{tweet.username}</Text>
+                  </Grid.Col>
+                  <Grid.Col span={9}>
+                    <Text size="md" color="gray">{formatDateTime(tweet.time)}</Text>
+                  </Grid.Col>
+                </Grid>
 
-                      <Grid>
-                        <Grid.Col span={8} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          {tweet.image && <Image src={tweet.image} style={{ maxWidth: '30%', height: 'auto' }} alt="Tweet Image" />}
-                          <HashtagText text={tweet.content} />
-                        </Grid.Col>
-                      </Grid>
+                <Grid>
+                  <Grid.Col span={8} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    {tweet.image && <Image src={tweet.image} style={{ maxWidth: '30%', height: 'auto' }} alt="Tweet Image" />}
+                    <HashtagText text={tweet.content} />
+                  </Grid.Col>
+                </Grid>
 
-                      <Grid>
-                        <Grid.Col sx={{ textAlign: 'center' }} span={6}>
-
-                          <LikeButton
-                            tweetid={tweet.tweetid}
-                            initialLike={tweet.like}
-                            initialIsLiked={tweet.isLiked}
-                            onLikeChange={handleLikeChange}
-                          />
-                          <>{console.log(tweet.tweetid)}</>
-                        </Grid.Col>
-                        <Grid.Col span={6}>
-                          <ReplyList tweetId={tweet.tweetid} onHashtagsExtracted={() => { }} />
-                        </Grid.Col>
-                      </Grid>
-                      <Divider my="sm" />
-                    </Box>
-                  ))
-                ) : (
-                  <Text>ツイートがまだありません</Text>
-                )}
-            </>
+                <Grid>
+                  <Grid.Col sx={{ textAlign: 'center' }} span={6}>
+                    <LikeCircleButton
+                      tweetid={tweet.tweetid}
+                      initialLike={tweet.like}
+                      initialIsLiked={tweet.isLiked}
+                      onLikeChange={handleLikeChange}
+                    />
+                  </Grid.Col>
+                  <Grid.Col span={6}>
+                    <ReplyList tweetId={tweet.tweetid} onHashtagsExtracted={() => { }} />
+                  </Grid.Col>
+                </Grid>
+                <Divider my="sm" />
+              </Box>
+            ))
           ) : (
-            <Container>
+            <Text>ツイートがまだありません</Text>
+          )}
+        </>
+      )}
+    </>
+  ) : (
+    <Container>
             <Button onClick={handleCircleRegister}>サークルに加入</Button>
             <Text align='center' weight={600}>Circleに参加してツイートを見ましょう!</Text>
             </Container>
-          )}
-        </Container>
+  )}
+</Container>
+
         {isMember ? (
         <Box
                 sx={{

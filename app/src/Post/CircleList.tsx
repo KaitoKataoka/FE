@@ -86,7 +86,8 @@ const CircleList: React.FC<CircleListProps> = ({ refreshTrigger }) => {
               <Link to={`/circle/${circle.circleid}`} style={{ textDecoration: 'none' }}>
                   <Center>
                     <Avatar size={isMobile ? 20:(isMobile2 ?  30:40)} radius="xl" mr="md" src={`https://api.adorable.io/avatars/40/${circle.circleid}.png`} />
-                    <Text size={isMobile2 ?  "xs":"lg"} weight={700} color='black' align="center">
+                    <Text
+                    size={isMobile2 ?  "xs":"lg"} weight={700} color="lime" align="center">
                       {circle.circlename}
                     </Text>
                   </Center>

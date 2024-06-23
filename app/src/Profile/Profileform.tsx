@@ -92,7 +92,7 @@ const Profileform: React.FC<FormProps> = ({ onSubmit, onImageChange, imagePrevie
               onChange={(e) => setComment(e.target.value)}
             />
             <Button type="submit" fullWidth mt="md">
-              Save Profile
+              保存
             </Button>
           </Stack>
         </form>
