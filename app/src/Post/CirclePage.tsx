@@ -146,7 +146,7 @@ const CirclePage: React.FC<MyProfileProps> = ({ profileData }) => {
                         avatar_url: avatardata.avatar_url || defaultAvatar,
                         image: tweet.image
                     }));
-                    newTweets.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+                    newTweets.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
                     setAllTweets(newTweets);  // 全ツイートを一度に設定
                 }
             }
@@ -271,34 +271,6 @@ const CirclePage: React.FC<MyProfileProps> = ({ profileData }) => {
         return;
       }
 
-      const circlePostData = await circlePostResponse.json();
-      setcirclepostid(circlePostData)
-
-      // 通常のツイートテーブルにツイートを作成
-      const postResponse = await fetch(
-        "https://hackathon-ro2txyk6rq-uc.a.run.app/post",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username: profileData?.username,
-            content: content,
-            uid: firebaseUID,
-            like: 0,
-            image: image_url,
-          }),
-        }
-      );
-
-      if (!postResponse.ok) {
-        const errorData = await postResponse.json();
-        console.error("Failed to post tweet:", errorData);
-        alert("Failed to post tweet");
-        return;
-      }
-
       const newTweet: CircleTweet = {
         circleid: circleid || "",
         tweetid: "", // 通常のツイートIDを追加
@@ -315,7 +287,6 @@ const CirclePage: React.FC<MyProfileProps> = ({ profileData }) => {
       setAllTweets(prevTweets => [newTweet, ...prevTweets]);
 
       setTweetImage(null);
-      console.log(newTweet.tweetid)
       setReplyContent("");
       setImagePreview(null);
       setImageOk(false);
