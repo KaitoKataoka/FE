@@ -121,14 +121,6 @@ const CirclePage: React.FC<MyProfileProps> = ({ profileData }) => {
             const likedTweetsData = await fetchLikedTweets(fireAuth.currentUser.uid);
             setLikedTweets(likedTweetsData);
 
-            const avatarresponse = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/searchAvatar?uid=${fireAuth.currentUser?.uid}`);
-            const avatardata = await avatarresponse.json();
-            if (avatardata.avatar_url !== ""){
-                setAvatarURL(avatardata.avatar_url);
-            } else {
-                setAvatarURL(defaultAvatar);
-            }
-
             const response = await fetch(`https://hackathon-ro2txyk6rq-uc.a.run.app/getcircletweet?circleid=${circleid}`);
             if (response.ok) {
                 const data = await response.json();
@@ -143,8 +135,8 @@ const CirclePage: React.FC<MyProfileProps> = ({ profileData }) => {
                         like: tweet.like,
                         isLiked: likedTweetsData && likedTweetsData.includes(tweet.tweetid),
                         replyCount: tweet.replyCount || 0,
-                        avatar_url: avatardata.avatar_url || defaultAvatar,
-                        image: tweet.image
+                        image: tweet.image,
+                        avatar_url: tweet.avatar_url
                     }));
                     newTweets.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
                     setAllTweets(newTweets);  // 全ツイートを一度に設定
@@ -260,6 +252,7 @@ const CirclePage: React.FC<MyProfileProps> = ({ profileData }) => {
             uid: firebaseUID,
             like: 0,
             image: image_url,
+            avatar_url: avatarData.avatar_url
           }),
         }
       );
@@ -281,7 +274,7 @@ const CirclePage: React.FC<MyProfileProps> = ({ profileData }) => {
         like: 0,
         isLiked: false,
         replyCount: 0,
-        avatar_url: avatarData.avatar_url || "",
+        avatar_url: "",
         image: image_url || ""
       };
       setAllTweets(prevTweets => [newTweet, ...prevTweets]);
@@ -380,7 +373,7 @@ const CirclePage: React.FC<MyProfileProps> = ({ profileData }) => {
             filteredTweets.slice().reverse().map((tweet: CircleTweet, index: number) => (
               <Box key={index} mb="lg">
                 <Grid>
-                  <Avatar src={avatarURL || defaultAvatar} alt="Profile" size={50} radius="xl" />
+                  <Avatar src={tweet.avatar_url} alt="Profile" size={50} radius="xl" />
                   <Grid.Col span={2}>
                     <Text size='xl' weight={700}>{tweet.username}</Text>
                   </Grid.Col>

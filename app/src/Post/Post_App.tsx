@@ -504,22 +504,23 @@ const Post_App: React.FC = () => {
               />
               </Grid.Col>
               {searchCircleResults.map(circle => (
-                  <Box key={circle.circleid}  style={{ cursor: 'pointer' }}>
-                    <Grid.Col span={4}>
-                    <Avatar size={40} radius="xl" mr="md" src={null} />
-                    </Grid.Col>
-                    <Grid.Col span={6}>
-                    <Text
-                    onClick={() => handleCircleClick(circle.circleid)}
-                    weight={700}
-                    sx={{
-                    marginTop: 15}}
-                    >
-                      {circle.circlename}
-                      </Text>
-                    </Grid.Col>
-                  </Box>
-                ))}
+          <Box key={circle.circleid} style={{ cursor: 'pointer', marginBottom: '10px' }}>
+            <Grid align="center" gutter="xs">
+              <Grid.Col span="content">
+              </Grid.Col>
+              <Grid.Col span="auto">
+                <Text
+                  onClick={() => handleCircleClick(circle.circleid)}
+                  weight={700}
+                  sx={{ marginLeft: '10px' }}
+                >
+                    {circle.circlename}
+                  </Text>
+              </Grid.Col>
+            </Grid>
+            </Box>
+              ))}
+
                 {noCircleResults && <Text weight={700}>該当無し</Text>}
               <Grid.Col>
             <CircleList refreshTrigger={refreshTrigger} />
